@@ -1,0 +1,15 @@
+execution:
+  lag_days: 1                 # Signal at close T, execute at close T+1
+  cost_bps: 5                 # One-way transaction cost (basis points)
+  slippage_bps: 2             # Additional slippage
+  min_trade_bps: 1            # Don't trade if position change < threshold
+
+constraints:
+  max_leverage: 1.0           # No leverage (1.0 = fully invested max)
+  min_allocation: 0.0         # No shorting
+  max_turnover_annual: 20.0   # 2000% annual turnover cap (generous)
+
+risk_free_rate:
+  source: "FRED"
+  series: "DGS3MO"            # 3-month T-bill
+  fallback: 0.02              # 2% if FRED unavailable

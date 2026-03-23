@@ -1,0 +1,40 @@
+benchmarks:
+  buy_and_hold:
+    allocation: 1.0            # 100% equity always
+
+  sixty_forty:
+    equity_weight: 0.60
+    bond_etf: "TLT"           # Long-term Treasury ETF
+    rebalance: "monthly"
+
+metrics:
+  - sharpe_ratio
+  - sortino_ratio
+  - calmar_ratio
+  - max_drawdown
+  - cagr
+  - annual_volatility
+  - turnover
+  - hit_rate_monthly
+  - profit_factor
+  - skewness
+  - kurtosis
+
+rolling:
+  window_days: 252             # 1-year rolling window
+
+bootstrap:
+  n_samples: 10000
+  confidence_level: 0.95
+  random_state: 42
+
+crisis_periods:
+  dotcom:
+    start: "2000-03-10"
+    end: "2002-10-09"
+  financial_crisis:
+    start: "2007-10-09"
+    end: "2009-03-09"
+  covid:
+    start: "2020-02-19"
+    end: "2020-03-23"

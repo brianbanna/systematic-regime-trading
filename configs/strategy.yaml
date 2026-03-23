@@ -1,0 +1,33 @@
+strategies:
+  binary_regime:
+    description: "100% equity in calm, 0% in turbulent"
+    allocation:
+      calm: 1.0
+      moderate: 0.5
+      turbulent: 0.0
+
+  proportional_regime:
+    description: "Allocation proportional to P(calm)"
+    method: "probability_weighted"
+
+  vol_targeted:
+    description: "Scale allocation to hit vol target per regime"
+    vol_target: 0.10          # 10% annualized
+    vol_lookback_days: 63     # Quarterly rolling vol estimate
+
+  regime_momentum:
+    description: "Overweight when regime is persistent"
+    persistence_threshold_days: 10
+    allocation:
+      calm_persistent: 1.2     # Slight leverage
+      calm_new: 0.8
+      moderate: 0.5
+      turbulent: 0.0
+
+signal_filters:
+  confirmation_days: 3        # Require N days in new regime before switching
+  max_daily_allocation_change: 0.25  # Limit allocation change per day
+
+rebalance:
+  frequency: "daily"          # daily, weekly, monthly
+  day_of_week: null           # For weekly: 0=Monday

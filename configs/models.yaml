@@ -1,0 +1,44 @@
+hmm:
+  n_states: 5             # Fit 5 states, remap to 3
+  n_iter: 1000
+  covariance_type: "full"
+  random_state: 42
+  input_feature: "systemic_stress_pc2"
+  remap_to_3:
+    calm: [0, 1]           # States 0,1 -> calm
+    moderate: [2]           # State 2 -> moderate
+    turbulent: [3, 4]       # States 3,4 -> turbulent
+
+garch:
+  p: 1
+  q: 1
+  mean_model: "Constant"
+  vol_model: "GARCH"
+  distribution: "t"         # Student-t (fix from ADA's "normal")
+  return_scaling: 100
+  regime_quantiles: [0.33, 0.67]
+
+kmeans:
+  n_clusters: 3
+  random_state: 42
+  features:
+    volvol: ["market_volatility", "market_volume"]
+    mood: ["mood_index"]
+
+ensemble:
+  method: "weighted_vote"
+  min_weight: 0.10
+  max_weight: 0.80
+  weight_step: 0.05
+  n_regimes: 3
+
+regime_labels:
+  0: "Calm"
+  1: "Moderate"
+  2: "Turbulent"
+
+walk_forward:
+  min_train_years: 5
+  test_window_days: 252     # 1 year
+  step_days: 63             # ~quarterly refit
+  expanding: true           # Expanding window (not rolling)

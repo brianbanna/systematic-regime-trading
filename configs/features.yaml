@@ -1,0 +1,19 @@
+indicators:
+  smoothing_window: 20
+  correlation_window: 30
+  correlation_sample_size: 500
+  standardization_window: 252  # 1 trading year
+
+pca:
+  n_components: 2
+  features:
+    - market_volatility
+    - market_atr
+    - market_correlation
+    - market_breadth
+    - market_direction
+    - market_volume
+
+volatility:
+  smoothing_windows: [5, 10, 20, 30]
+  annualization_factor: 252

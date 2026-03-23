@@ -1,0 +1,18 @@
+universe:
+  source: "cache/nasdaq_constituents.csv"
+  date_range:
+    start: "2000-01-01"
+    end: "2020-12-31"
+  min_history_days: 30
+  max_missing_pct: 0.10
+  interpolation_window: 5
+
+cleaning:
+  extreme_high_price: 10000
+  extreme_low_price: 0.01
+  volume_tolerance_pct: 0.01
+
+storage:
+  format: "parquet"
+  processed_dir: "data/processed"
+  raw_dir: "data/raw"

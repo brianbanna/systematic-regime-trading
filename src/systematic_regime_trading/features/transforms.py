@@ -63,8 +63,10 @@ def safe_interpolate(
     Returns:
         Interpolated series
     """
+    # Clamp limit to series length to avoid numpy sliding_window_view error
+    safe_limit = min(limit, max(len(series) - 1, 1))
     return series.interpolate(
-        method=method, limit=limit, limit_direction=limit_direction,
+        method=method, limit=safe_limit, limit_direction=limit_direction,
     )
 
 

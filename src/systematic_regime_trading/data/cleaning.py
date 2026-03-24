@@ -111,16 +111,18 @@ def fill_missing_data_unified(
             df[col] = df.groupby("ticker")[col].transform(
                 lambda x: x.interpolate(
                     method="linear",
-                    limit=interp_window,
+                    limit=min(interp_window, max(len(x) - 1, 1)),
                     limit_area="inside",
                     limit_direction="forward",
                 )
             )
 
     # Quality control: drop tickers with too much missing data
-    missing_ratios = df.groupby("ticker")[target_cols].apply(
-        lambda x: x.isna().mean().max()
+    # Compute per-ticker missing ratio as the worst column's missing rate
+    missing_by_col = df.groupby("ticker")[target_cols].apply(
+        lambda x: x.isna().mean(), include_groups=False,
     )
+    missing_ratios = missing_by_col.max(axis=1)
 
     valid_tickers = missing_ratios[missing_ratios <= max_missing_pct].index
     dropped_tickers = missing_ratios[missing_ratios > max_missing_pct].index

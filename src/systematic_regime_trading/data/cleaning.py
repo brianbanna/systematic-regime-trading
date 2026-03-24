@@ -160,6 +160,75 @@ def fill_missing_data_unified(
 
 
 # ---------------------------------------------------------------------------
+# Full pipeline
+# ---------------------------------------------------------------------------
+
+def clean_pipeline(
+    raw_data: dict[str, pd.DataFrame],
+    config: dict = None,
+) -> pd.DataFrame:
+    """
+    Full cleaning pipeline.
+
+    1. Per-ticker: dedup by date, convert types, sort
+    2. Repair OHLCV quality (zero opens, impossible moves)
+    3. Combine into unified DataFrame
+    4. Cross-ticker dedup
+    5. Interpolate missing (forward-only to prevent lookahead)
+    6. Drop tickers exceeding missing threshold
+    7. Remove negative prices
+    8. Validate final output
+
+    Args:
+        raw_data: Dictionary mapping ticker symbols to raw DataFrames
+        config: Data config dict (from configs/data.yaml). If None, uses defaults.
+
+    Returns:
+        Cleaned unified DataFrame
+    """
+    if config is None:
+        from systematic_regime_trading.utils.config import load_config
+        config = load_config("data")
+
+    max_missing_pct = config["universe"]["max_missing_pct"]
+    interp_window = config["universe"]["interpolation_window"]
+
+    # Step 1: Per-ticker cleaning
+    cleaned_data = clean_ticker_data(raw_data)
+
+    # Step 2: Repair OHLCV quality
+    repair_ohlcv_quality(cleaned_data)
+
+    # Step 3: Combine into unified DataFrame
+    from systematic_regime_trading.data.loaders import combine_dataframes_to_unified
+    unified = combine_dataframes_to_unified(cleaned_data)
+
+    # Step 4: Cross-ticker dedup + Step 5-7: Interpolate, drop, remove negatives
+    cleaned = clean_unified_dataframe(unified)
+    cleaned = fill_missing_data_unified(
+        cleaned,
+        max_missing_pct=max_missing_pct,
+        interp_window=interp_window,
+    )
+
+    # Step 8: Validate
+    report = generate_validation_report(
+        cleaned,
+        extreme_high_price=config["cleaning"]["extreme_high_price"],
+        extreme_low_price=config["cleaning"]["extreme_low_price"],
+        volume_tolerance_pct=config["cleaning"]["volume_tolerance_pct"],
+        verbose=True,
+    )
+
+    logger.info(
+        f"Pipeline complete: {cleaned['ticker'].nunique()} tickers, "
+        f"{len(cleaned):,} rows. Valid: {report['is_valid']}"
+    )
+
+    return cleaned
+
+
+# ---------------------------------------------------------------------------
 # OHLCV repair
 # ---------------------------------------------------------------------------
 

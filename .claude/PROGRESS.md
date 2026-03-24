@@ -1,7 +1,7 @@
 # Project Progress Tracker
 
-## Current Phase: Phase 4 — Strategy Construction
-## Current Task: 4.1 — Implement Regime Signal Module
+## Current Phase: Phase 5 — Backtesting Framework
+## Current Task: 5.1 — Implement Backtest Engine
 
 ---
 
@@ -32,11 +32,11 @@
 - [x] **3.6** Model Selection and Diagnostics (BIC, silhouette, stability checks)
 
 ## Phase 4: Strategy Construction
-- [ ] **4.1** Implement Regime Signal Module (probabilities to allocations)
-- [ ] **4.2** Implement Signal Filters (confirmation, rate limiter, anti-whipsaw)
-- [ ] **4.3** Implement Volatility Targeting (vol-target overlay)
-- [ ] **4.4** Apply Execution Lag (1-day shift)
-- [ ] **4.5** Generate All Strategy Signals (binary, proportional, vol-targeted, momentum)
+- [x] **4.1** Implement Regime Signal Module (probabilities to allocations)
+- [x] **4.2** Implement Signal Filters (confirmation, rate limiter, anti-whipsaw)
+- [x] **4.3** Implement Volatility Targeting (vol-target overlay)
+- [x] **4.4** Apply Execution Lag (1-day shift)
+- [x] **4.5** Generate All Strategy Signals (binary, proportional, vol-targeted, momentum)
 
 ## Phase 5: Backtesting Framework
 - [ ] **5.1** Implement Backtest Engine (vectorized: signals to returns)
@@ -84,3 +84,4 @@
 - **Tasks 1.7-1.8 completed**: Wrote 45 unit tests across 6 test files (cleaning, indicators, transforms, HMM, GARCH, config/storage). All 45 tests passing. Phase 1 complete.
 - **Tasks 2.1-2.6 completed**: Implemented full data pipeline: yfinance/FRED/CSV downloaders, clean_pipeline wrapper, universe construction with cached ticker loading, data catalog auto-generation, pipeline entry point (__main__.py with --fresh/--validate-only), auxiliary data downloaders (VIX, T-bill, TLT). Added 10 new tests (55 total passing). Phase 2 complete.
 - **Tasks 3.1-3.6 completed**: Refactored all 3 models to class-based .fit()/.predict()/.predict_proba() interface. HMM: state ordering by emission mean, 5-to-3 state remapping, BIC scoring. GARCH: expanding-window quantile thresholds (no lookahead), Student-t, distance-based pseudo-probabilities. K-Means: inverse-distance proba, silhouette scoring. Ensemble: probability-weighted voting. Walk-forward validation with expanding window. Model diagnostics (BIC/silhouette selection, stability). 38 new tests (93 total passing). Phase 3 complete.
+- **Tasks 4.1-4.5 completed**: Implemented full signal generation pipeline: regime_signal.py (4 strategies: binary, proportional, vol-targeted, regime momentum), filters.py (confirmation filter, rate limiter, execution lag), vol_target.py (rolling vol scaling), generator.py (orchestrates all signals). 10 new tests (103 total passing). Phase 4 complete.

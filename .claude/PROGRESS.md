@@ -1,7 +1,7 @@
 # Project Progress Tracker
 
-## Current Phase: Phase 2 — Data Pipeline
-## Current Task: 2.1 — Implement Data Downloaders
+## Current Phase: Phase 3 — Regime Detection Models
+## Current Task: 3.1 — Refactor HMM Module
 
 ---
 
@@ -16,12 +16,12 @@
 - [x] **1.8** Validate Migration (45 tests passing, all imports verified)
 
 ## Phase 2: Data Pipeline
-- [ ] **2.1** Implement Data Downloaders (yfinance, FRED, CSV loader)
-- [ ] **2.2** Implement Cleaning Pipeline (consolidated clean.py)
-- [ ] **2.3** Implement Universe Construction (cached subset loading)
-- [ ] **2.4** Implement Storage Layer (Parquet I/O + data catalog)
-- [ ] **2.5** Build Pipeline Entry Point (src/data/__main__.py)
-- [ ] **2.6** Download Auxiliary Data (VIX, T-bill, TLT)
+- [x] **2.1** Implement Data Downloaders (yfinance, FRED, CSV loader)
+- [x] **2.2** Implement Cleaning Pipeline (consolidated clean.py)
+- [x] **2.3** Implement Universe Construction (cached subset loading)
+- [x] **2.4** Implement Storage Layer (Parquet I/O + data catalog)
+- [x] **2.5** Build Pipeline Entry Point (src/data/__main__.py)
+- [x] **2.6** Download Auxiliary Data (VIX, T-bill, TLT)
 
 ## Phase 3: Regime Detection Models
 - [ ] **3.1** Refactor HMM Module (predict_proba, state ordering, config-driven)
@@ -82,3 +82,4 @@
 - **Tasks 1.4-1.5 completed**: Implemented config system (utils/config.py, paths.py, constants.py) and Parquet storage layer (data/storage.py).
 - **Task 1.6 completed**: All known bugs (np.random.seed, pct_change fill_method, GARCH normal dist) were already fixed during migration in task 1.3. Also fixed pandas 3.0 interpolation limit edge case.
 - **Tasks 1.7-1.8 completed**: Wrote 45 unit tests across 6 test files (cleaning, indicators, transforms, HMM, GARCH, config/storage). All 45 tests passing. Phase 1 complete.
+- **Tasks 2.1-2.6 completed**: Implemented full data pipeline: yfinance/FRED/CSV downloaders, clean_pipeline wrapper, universe construction with cached ticker loading, data catalog auto-generation, pipeline entry point (__main__.py with --fresh/--validate-only), auxiliary data downloaders (VIX, T-bill, TLT). Added 10 new tests (55 total passing). Phase 2 complete.

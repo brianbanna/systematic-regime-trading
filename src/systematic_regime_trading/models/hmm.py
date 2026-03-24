@@ -185,12 +185,16 @@ class HMMRegimeDetector:
         self.model_.startprob_ = self.model_.startprob_[order]
         self.model_.transmat_ = self.model_.transmat_[order][:, order]
 
-        if self.covariance_type == "full":
-            self.model_.covars_ = self.model_.covars_[order]
-        elif self.covariance_type == "diag":
-            self.model_.covars_ = self.model_.covars_[order]
-        elif self.covariance_type == "spherical":
-            self.model_.covars_ = self.model_.covars_[order]
+        # Reorder covars — handle different shapes per covariance_type
+        raw_covars = self.model_.covars_
+        reordered = raw_covars[order]
+
+        if self.covariance_type == "diag":
+            # hmmlearn stores diag as 3D internally but validates as 2D
+            n_dim = self.model_.means_.shape[1]
+            reordered = reordered.reshape(self.n_states, n_dim)
+
+        self.model_.covars_ = reordered
 
     def _remap_to_3(self, states: np.ndarray) -> np.ndarray:
         """Remap N-state labels to 3 regimes using config mapping."""

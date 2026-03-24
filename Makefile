@@ -3,7 +3,13 @@
 PKG = systematic_regime_trading
 
 data:
-	python -m $(PKG).data.loaders
+	python -m $(PKG).data
+
+data-fresh:
+	python -m $(PKG).data --fresh
+
+data-validate:
+	python -m $(PKG).data --validate-only
 
 features:
 	python -m $(PKG).features.indicators

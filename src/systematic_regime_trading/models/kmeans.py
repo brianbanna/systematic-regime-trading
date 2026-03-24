@@ -1,18 +1,187 @@
 """
-K-Means clustering for volatility regime detection.
+K-Means clustering for regime detection.
 
-Core clustering pipeline, feature importance, label reordering,
-transition analysis. Plotting functions removed (see visualization/).
+Labels ordered by mean volatility (ascending: 0=calm, 2=turbulent).
+Pseudo-probabilities via inverse distance to cluster centers.
+
+Key improvements over ADA:
+- Class-based interface with .fit(), .predict(), .predict_proba()
+- Inverse-distance pseudo-probabilities for proportional allocation
+- Config-driven parameters
 """
 
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-from typing import Tuple, List
+from sklearn.metrics import silhouette_score
+from typing import Tuple, List, Optional
+import logging
 
+from systematic_regime_trading.utils.config import load_config
+
+logger = logging.getLogger(__name__)
+
+
+class KMeansRegimeDetector:
+    """
+    K-Means clustering on market features.
+    Labels ordered by mean volatility (ascending).
+    """
+
+    def __init__(self, config: dict = None):
+        if config is None:
+            config = load_config("models")["kmeans"]
+
+        self.n_clusters = config.get("n_clusters", 3)
+        self.random_state = config.get("random_state", 42)
+        self.feature_config = config.get("features", {})
+
+        self.pipeline_ = None
+        self.cluster_order_ = None
+        self.is_fitted_ = False
+
+    def fit(self, X: pd.DataFrame) -> "KMeansRegimeDetector":
+        """
+        Fit scaler + KMeans on training data.
+
+        Args:
+            X: Feature DataFrame (rows=observations, cols=features)
+
+        Returns:
+            self
+        """
+        X_arr = self._to_array(X)
+        self._validate_input(X_arr)
+
+        self.pipeline_ = Pipeline([
+            ("scaler", StandardScaler()),
+            ("kmeans", KMeans(
+                n_clusters=self.n_clusters,
+                random_state=self.random_state,
+                n_init=10,
+            )),
+        ])
+
+        raw_labels = self.pipeline_.fit_predict(X_arr)
+
+        # Order clusters by centroid magnitude (ascending = calm -> turbulent)
+        kmeans = self.pipeline_.named_steps["kmeans"]
+        scaler = self.pipeline_.named_steps["scaler"]
+
+        # Get centroids in original scale
+        centroids_scaled = kmeans.cluster_centers_
+        centroids_original = scaler.inverse_transform(centroids_scaled)
+
+        # Sort by mean of all features (proxy for volatility)
+        centroid_means = centroids_original.mean(axis=1)
+        self.cluster_order_ = np.argsort(centroid_means)
+
+        self.is_fitted_ = True
+
+        # Compute silhouette score for diagnostics
+        if len(np.unique(raw_labels)) > 1:
+            sil = silhouette_score(X_arr, raw_labels)
+            logger.info(
+                f"KMeans fitted: {self.n_clusters} clusters, "
+                f"silhouette={sil:.3f}"
+            )
+        else:
+            logger.warning("KMeans: all points assigned to single cluster")
+
+        return self
+
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        """
+        Regime labels ordered by volatility (0=calm, 2=turbulent).
+
+        Args:
+            X: Feature DataFrame
+
+        Returns:
+            Array of regime labels
+        """
+        self._check_fitted()
+        X_arr = self._to_array(X)
+        raw_labels = self.pipeline_.predict(X_arr)
+        return self._reorder_labels(raw_labels)
+
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+        """
+        Pseudo-probabilities based on inverse distance to cluster centers.
+
+        P(regime_k) = (1/d_k) / sum(1/d_j) for all clusters j.
+
+        Returns:
+            Array of shape (n_samples, n_clusters) with probabilities
+        """
+        self._check_fitted()
+        X_arr = self._to_array(X)
+        scaler = self.pipeline_.named_steps["scaler"]
+        kmeans = self.pipeline_.named_steps["kmeans"]
+
+        X_scaled = scaler.transform(X_arr)
+        distances = kmeans.transform(X_scaled)  # distances to each centroid
+
+        # Reorder columns to match sorted labels
+        distances = distances[:, self.cluster_order_]
+
+        # Inverse distance with floor to avoid division by zero
+        inv_dist = 1.0 / np.maximum(distances, 1e-10)
+        probs = inv_dist / inv_dist.sum(axis=1, keepdims=True)
+
+        return probs
+
+    def get_centroids(self, original_scale: bool = True) -> np.ndarray:
+        """Get cluster centroids, optionally in original feature scale."""
+        self._check_fitted()
+        kmeans = self.pipeline_.named_steps["kmeans"]
+        centroids = kmeans.cluster_centers_
+
+        if original_scale:
+            scaler = self.pipeline_.named_steps["scaler"]
+            centroids = scaler.inverse_transform(centroids)
+
+        # Reorder to match label ordering
+        return centroids[self.cluster_order_]
+
+    def silhouette(self, X: pd.DataFrame) -> float:
+        """Compute silhouette score on data."""
+        self._check_fitted()
+        X_arr = self._to_array(X)
+        labels = self.predict(X)
+        if len(np.unique(labels)) <= 1:
+            return -1.0
+        return silhouette_score(X_arr, labels)
+
+    # --- Private helpers ---
+
+    def _to_array(self, X) -> np.ndarray:
+        if isinstance(X, pd.DataFrame):
+            return X.values
+        if isinstance(X, pd.Series):
+            return X.values.reshape(-1, 1)
+        return X
+
+    def _validate_input(self, X: np.ndarray):
+        if np.isnan(X).any():
+            raise ValueError(
+                f"Input contains {np.isnan(X).sum()} NaN values. "
+                "Clean data before clustering."
+            )
+
+    def _check_fitted(self):
+        if not self.is_fitted_:
+            raise RuntimeError("Model not fitted. Call .fit() first.")
+
+    def _reorder_labels(self, labels: np.ndarray) -> np.ndarray:
+        """Map raw cluster IDs to sorted order."""
+        reverse_map = {old: new for new, old in enumerate(self.cluster_order_)}
+        return np.array([reverse_map[l] for l in labels])
+
+
+# --- Backwards-compatible function wrappers ---
 
 def clustering_pipeline(
     X: np.ndarray,
@@ -22,157 +191,59 @@ def clustering_pipeline(
     prediction_only: bool = False,
     train: bool = True,
 ) -> Tuple[np.ndarray, Pipeline]:
-    """
-    Build or use a Scaler -> PCA -> KMeans pipeline.
-
-    Args:
-        X: Feature matrix
-        n_clusters: Number of clusters
-        random_state: Random seed
-        pipe: Optional prebuilt pipeline
-        prediction_only: If True, only predict with provided pipeline
-        train: If True, fit the provided pipeline
-
-    Returns:
-        Tuple of (labels, fitted_pipeline)
-    """
+    """Build or use a Scaler -> KMeans pipeline."""
     if isinstance(X, np.ndarray):
         if np.isnan(X).any():
-            raise ValueError(
-                f"Input contains {np.isnan(X).sum()} NaN values. "
-                "Please clean data before clustering."
-            )
+            raise ValueError(f"Input contains {np.isnan(X).sum()} NaN values.")
     else:
         if X.isnull().any().any():
-            nan_cols = X.isnull().sum()
-            nan_cols = nan_cols[nan_cols > 0]
-            raise ValueError(
-                f"Input contains NaN values in columns: {nan_cols.to_dict()}. "
-                "Please clean data before clustering."
-            )
+            raise ValueError("Input contains NaN values.")
 
     if pipe is not None and prediction_only:
         labels = pipe.predict(X)
     elif pipe is not None and train:
         labels = pipe.fit_predict(X)
     else:
-        n_features = X.shape[1]
-        n_components = min(2, n_features)
-
-        if n_features < 3:
-            pipe = Pipeline([
-                ("scaler", StandardScaler()),
-                ("kmeans", KMeans(n_clusters=n_clusters, random_state=random_state)),
-            ])
-        else:
-            pipe = Pipeline([
-                ("scaler", StandardScaler()),
-                ("pca", PCA(n_components=n_components)),
-                ("kmeans", KMeans(n_clusters=n_clusters, random_state=random_state)),
-            ])
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("kmeans", KMeans(n_clusters=n_clusters, random_state=random_state)),
+        ])
         labels = pipe.fit_predict(X)
 
     return labels, pipe
 
 
-def get_feature_importance(
-    pipe: Pipeline, feature_names: List[str]
-) -> List[Tuple[str, float]]:
-    """
-    Calculate feature importance based on PCA component weights.
-
-    Args:
-        pipe: Fitted pipeline containing PCA step
-        feature_names: List of original feature names
-
-    Returns:
-        List of (feature_name, importance) tuples sorted descending
-    """
-    pca = pipe.named_steps["pca"]
-    importance = np.abs(pca.components_).sum(axis=0)
-    importance = importance / importance.sum()
-
-    feature_importance = list(zip(feature_names, importance))
-    feature_importance.sort(key=lambda x: x[1], reverse=True)
-
-    return feature_importance
-
-
 def rearrange_labels_by_feature(
-    df: pd.DataFrame, labels: np.ndarray, feature_name: str
+    df: pd.DataFrame, labels: np.ndarray, feature_name: str,
 ) -> np.ndarray:
-    """
-    Reorder cluster labels by ascending mean of target feature.
-
-    Ensures State 0 = lowest feature value, State N = highest.
-
-    Args:
-        df: DataFrame containing the feature
-        labels: Original cluster labels
-        feature_name: Feature to sort by
-
-    Returns:
-        Relabeled array
-    """
     df_temp = df.copy()
     df_temp["cluster"] = labels
     cluster_means = df_temp.groupby("cluster")[feature_name].mean().sort_values()
-    label_mapping = {old: new for new, old in enumerate(cluster_means.index)}
-    return np.array([label_mapping[label] for label in labels])
+    mapping = {old: new for new, old in enumerate(cluster_means.index)}
+    return np.array([mapping[l] for l in labels])
 
 
 def compute_transition_matrix(regimes: np.ndarray) -> np.ndarray:
-    """
-    Compute transition probability matrix from regime sequence.
-
-    Args:
-        regimes: Array of regime labels (integers)
-
-    Returns:
-        Transition probability matrix (n_states x n_states)
-    """
     n_states = len(np.unique(regimes))
-    transition_counts = np.zeros((n_states, n_states))
-
-    regime_array = np.array(regimes, dtype=int)
-
-    for i in range(len(regime_array) - 1):
-        transition_counts[regime_array[i], regime_array[i + 1]] += 1
-
-    row_sums = transition_counts.sum(axis=1, keepdims=True)
-    transition_probs = np.divide(
-        transition_counts, row_sums,
-        where=row_sums != 0, out=np.zeros_like(transition_counts),
-    )
-
-    return transition_probs
+    counts = np.zeros((n_states, n_states))
+    arr = np.array(regimes, dtype=int)
+    for i in range(len(arr) - 1):
+        counts[arr[i], arr[i + 1]] += 1
+    sums = counts.sum(axis=1, keepdims=True)
+    return np.divide(counts, sums, where=sums != 0, out=np.zeros_like(counts))
 
 
-def compute_avg_duration(
-    labels: np.ndarray, regimes: list
-) -> dict:
-    """
-    Compute average consecutive duration for each regime.
-
-    Args:
-        labels: Array of regime labels
-        regimes: List of unique regime values
-
-    Returns:
-        Dict mapping regime -> average duration in periods
-    """
+def compute_avg_duration(labels: np.ndarray, regimes: list) -> dict:
     durations = {r: [] for r in regimes}
-    labels_array = np.array(labels)
-    current_regime = labels_array[0]
-    current_duration = 1
-
-    for i in range(1, len(labels_array)):
-        if labels_array[i] == current_regime:
-            current_duration += 1
+    arr = np.array(labels)
+    current = arr[0]
+    dur = 1
+    for i in range(1, len(arr)):
+        if arr[i] == current:
+            dur += 1
         else:
-            durations[current_regime].append(current_duration)
-            current_regime = labels_array[i]
-            current_duration = 1
-    durations[current_regime].append(current_duration)
-
+            durations[current].append(dur)
+            current = arr[i]
+            dur = 1
+    durations[current].append(dur)
     return {r: np.mean(d) if d else 0 for r, d in durations.items()}

@@ -16,11 +16,11 @@
 
 | Field                    | Value                                          |
 |--------------------------|-------------------------------------------------|
-| Repository status        | Phase 2 complete — 55 tests passing              |
-| Current phase            | Phase 3 — Regime Detection Models                |
-| Last completed milestone | Phase 2 — Data Pipeline                          |
-| Current task             | 3.1 — Refactor HMM Module                        |
-| Next task                | 3.2 — Refactor GARCH Module                      |
+| Repository status        | Phase 3 complete — 93 tests passing              |
+| Current phase            | Phase 4 — Strategy Construction                  |
+| Last completed milestone | Phase 3 — Regime Detection Models                |
+| Current task             | 4.1 — Implement Regime Signal Module              |
+| Next task                | 4.2 — Implement Signal Filters                   |
 
 ---
 
@@ -83,12 +83,12 @@
 - All parameters from config
 
 **Tasks**:
-- [ ] **3.1** Refactor HMM module (predict_proba, state ordering, config-driven)
-- [ ] **3.2** Refactor GARCH module (Student-t, expanding quantiles, predict_proba)
-- [ ] **3.3** Refactor K-Means module (inverse-distance probabilities, config-driven)
-- [ ] **3.4** Refactor ensemble (probability-weighted voting)
-- [ ] **3.5** Implement walk-forward validation (expanding window, quarterly refit)
-- [ ] **3.6** Model selection and diagnostics (BIC, silhouette, stability checks)
+- [x] **3.1** Refactor HMM module (predict_proba, state ordering, config-driven)
+- [x] **3.2** Refactor GARCH module (Student-t, expanding quantiles, predict_proba)
+- [x] **3.3** Refactor K-Means module (inverse-distance probabilities, config-driven)
+- [x] **3.4** Refactor ensemble (probability-weighted voting)
+- [x] **3.5** Implement walk-forward validation (expanding window, quarterly refit)
+- [x] **3.6** Model selection and diagnostics (BIC, silhouette, stability checks)
 
 ---
 
@@ -206,6 +206,7 @@
 | 2026-03-24 | 1.6 Fix Known Bugs | All bugs already fixed in task 1.3. Fixed pandas 3.0 interpolation limit edge case (limit > series length). | pandas 3.0 sliding_window_view error | Clamp interpolation limit to len(series)-1 | 1.7 Write Tests |
 | 2026-03-24 | 1.7-1.8 Tests + Validation | Wrote 45 unit tests across 7 test files. All passing. Phase 1 complete. | None | — | 2.1 Implement Data Downloaders |
 | 2026-03-24 | 2.1-2.6 Full Data Pipeline | Implemented yfinance/FRED/CSV downloaders, clean_pipeline wrapper, universe construction, data catalog, pipeline entry point (__main__.py), auxiliary data support (VIX, T-bill, TLT). 10 new tests (55 total). | None | — | 3.1 Refactor HMM Module |
+| 2026-03-24 | 3.1-3.6 Regime Models | Refactored HMM/GARCH/KMeans to class-based .fit()/.predict()/.predict_proba(). HMM state ordering, GARCH expanding quantiles, KMeans inverse-distance proba. Ensemble probability-weighted voting. Walk-forward validation. Model diagnostics. 38 new tests (93 total). | HMM diag covars reorder shape | Reshape to 2D before setter | 4.1 Regime Signal Module |
 
 ---
 

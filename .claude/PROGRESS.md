@@ -1,7 +1,7 @@
 # Project Progress Tracker
 
-## Current Phase: Phase 3 — Regime Detection Models
-## Current Task: 3.1 — Refactor HMM Module
+## Current Phase: Phase 4 — Strategy Construction
+## Current Task: 4.1 — Implement Regime Signal Module
 
 ---
 
@@ -24,12 +24,12 @@
 - [x] **2.6** Download Auxiliary Data (VIX, T-bill, TLT)
 
 ## Phase 3: Regime Detection Models
-- [ ] **3.1** Refactor HMM Module (predict_proba, state ordering, config-driven)
-- [ ] **3.2** Refactor GARCH Module (Student-t, expanding quantiles, predict_proba)
-- [ ] **3.3** Refactor K-Means Module (inverse-distance probabilities, config-driven)
-- [ ] **3.4** Refactor Ensemble (probability-weighted voting)
-- [ ] **3.5** Implement Walk-Forward Validation (expanding window, quarterly refit)
-- [ ] **3.6** Model Selection and Diagnostics (BIC, silhouette, stability checks)
+- [x] **3.1** Refactor HMM Module (predict_proba, state ordering, config-driven)
+- [x] **3.2** Refactor GARCH Module (Student-t, expanding quantiles, predict_proba)
+- [x] **3.3** Refactor K-Means Module (inverse-distance probabilities, config-driven)
+- [x] **3.4** Refactor Ensemble (probability-weighted voting)
+- [x] **3.5** Implement Walk-Forward Validation (expanding window, quarterly refit)
+- [x] **3.6** Model Selection and Diagnostics (BIC, silhouette, stability checks)
 
 ## Phase 4: Strategy Construction
 - [ ] **4.1** Implement Regime Signal Module (probabilities to allocations)
@@ -83,3 +83,4 @@
 - **Task 1.6 completed**: All known bugs (np.random.seed, pct_change fill_method, GARCH normal dist) were already fixed during migration in task 1.3. Also fixed pandas 3.0 interpolation limit edge case.
 - **Tasks 1.7-1.8 completed**: Wrote 45 unit tests across 6 test files (cleaning, indicators, transforms, HMM, GARCH, config/storage). All 45 tests passing. Phase 1 complete.
 - **Tasks 2.1-2.6 completed**: Implemented full data pipeline: yfinance/FRED/CSV downloaders, clean_pipeline wrapper, universe construction with cached ticker loading, data catalog auto-generation, pipeline entry point (__main__.py with --fresh/--validate-only), auxiliary data downloaders (VIX, T-bill, TLT). Added 10 new tests (55 total passing). Phase 2 complete.
+- **Tasks 3.1-3.6 completed**: Refactored all 3 models to class-based .fit()/.predict()/.predict_proba() interface. HMM: state ordering by emission mean, 5-to-3 state remapping, BIC scoring. GARCH: expanding-window quantile thresholds (no lookahead), Student-t, distance-based pseudo-probabilities. K-Means: inverse-distance proba, silhouette scoring. Ensemble: probability-weighted voting. Walk-forward validation with expanding window. Model diagnostics (BIC/silhouette selection, stability). 38 new tests (93 total passing). Phase 3 complete.

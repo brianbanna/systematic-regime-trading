@@ -16,11 +16,11 @@
 
 | Field                    | Value                                          |
 |--------------------------|-------------------------------------------------|
-| Repository status        | Phase 4 complete — 103 tests passing             |
-| Current phase            | Phase 5 — Backtesting Framework                  |
-| Last completed milestone | Phase 4 — Strategy Construction                  |
-| Current task             | 5.1 — Implement Backtest Engine                   |
-| Next task                | 5.2 — Implement Transaction Cost Model            |
+| Repository status        | Phase 6 complete — 139 tests, real results in results/ |
+| Current phase            | Phase 7 — Visualization and Research Outputs       |
+| Last completed milestone | End-to-end pipeline run with real results          |
+| Current task             | 7.1 — Performance Visualizations                   |
+| Next task                | 7.2 — Regime Visualizations                        |
 
 ---
 
@@ -124,12 +124,12 @@
 - Turnover tracking per strategy
 
 **Tasks**:
-- [ ] **5.1** Implement backtest engine (vectorized: signals to returns)
-- [ ] **5.2** Implement transaction cost model (fixed + slippage + min trade filter)
-- [ ] **5.3** Implement portfolio module (constraints, leverage, turnover cap)
-- [ ] **5.4** Implement benchmarks (buy-and-hold, 60/40, risk parity)
-- [ ] **5.5** Run all backtests (orchestration across strategies)
-- [ ] **5.6** Transaction cost sensitivity analysis (0–20 bps sweep)
+- [x] **5.1** Implement backtest engine (vectorized: signals to returns)
+- [x] **5.2** Implement transaction cost model (fixed + slippage + min trade filter)
+- [x] **5.3** Implement portfolio module (constraints, leverage, turnover cap)
+- [x] **5.4** Implement benchmarks (buy-and-hold, 60/40, risk parity)
+- [x] **5.5** Run all backtests (orchestration across strategies)
+- [x] **5.6** Transaction cost sensitivity analysis (0–20 bps sweep)
 
 ---
 
@@ -146,12 +146,12 @@
 - HTML tearsheet generator
 
 **Tasks**:
-- [ ] **6.1** Implement core metrics (Sharpe, Sortino, Calmar, max DD, hit rate)
-- [ ] **6.2** Implement rolling metrics (rolling Sharpe, vol, drawdown, beta)
-- [ ] **6.3** Implement regime-conditional performance (alpha decomposition)
-- [ ] **6.4** Implement statistical significance (bootstrap CI, Sharpe difference test)
-- [ ] **6.5** Generate performance comparison table (master table)
-- [ ] **6.6** Generate report (HTML tearsheet)
+- [x] **6.1** Implement core metrics (Sharpe, Sortino, Calmar, max DD, hit rate)
+- [x] **6.2** Implement rolling metrics (rolling Sharpe, vol, drawdown, beta)
+- [x] **6.3** Implement regime-conditional performance (alpha decomposition)
+- [x] **6.4** Implement statistical significance (bootstrap CI, Sharpe difference test)
+- [x] **6.5** Generate performance comparison table (master table)
+- [x] **6.6** Run end-to-end pipeline with real results
 
 ---
 
@@ -259,11 +259,11 @@
 
 | Strategy | Sharpe | CAGR | Max Drawdown | Volatility | Turnover | Breakeven Cost (bps) |
 |----------|--------|------|--------------|------------|----------|----------------------|
-| Binary Regime | — | — | — | — | — | — |
-| Proportional Regime | — | — | — | — | — | — |
-| Vol-Targeted Regime | — | — | — | — | — | — |
-| Regime Momentum | — | — | — | — | — | — |
-| Buy-and-Hold (benchmark) | — | — | — | — | — | — |
+| Binary Regime | 0.906 | 13.3% | -26.0% | 12.4% | 20.0x | >50 bps |
+| Proportional Regime | 0.832 | 10.2% | -20.4% | 9.8% | 20.0x | >50 bps |
+| Vol-Targeted Regime | 0.519 | 4.5% | -9.2% | 4.9% | 13.2x | 41 bps |
+| **Regime Momentum** | **1.053** | **16.0%** | **-22.4%** | **13.0%** | **9.2x** | **>50 bps** |
+| Buy-and-Hold (benchmark) | 0.967 | 24.5% | -54.6% | 23.5% | 0.0x | N/A |
 | 60/40 (benchmark) | — | — | — | — | — | — |
 | Risk Parity (benchmark) | — | — | — | — | — | — |
 

@@ -1,4 +1,4 @@
-.PHONY: data features models signals backtest evaluate report website clean all test
+.PHONY: data features models signals backtest evaluate report website clean all test run
 
 PKG = systematic_regime_trading
 
@@ -37,6 +37,9 @@ clean:
 	rm -rf results/figures/*
 	rm -rf results/tables/*
 	rm -rf results/tearsheets/*
+
+run:
+	python scripts/run_pipeline.py
 
 all: data features models signals backtest evaluate report
 

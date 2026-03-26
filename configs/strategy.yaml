@@ -34,8 +34,8 @@ strategies:
 
 signal_filters:
   confirmation_days: 3                   # Symmetric fallback
-  confirmation_days_defensive: 1         # Fast entry to defensive (calm->turbulent)
-  confirmation_days_risk_on: 5           # Slow return to risk (turbulent->calm)
+  confirmation_days_defensive: 2         # Fast entry to defensive (calm->turbulent)
+  confirmation_days_risk_on: 4           # Slow return to risk (turbulent->calm)
   max_daily_allocation_change: 0.25      # Limit allocation change per day
 
 rebalance:

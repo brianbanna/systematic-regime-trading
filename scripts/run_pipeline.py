@@ -208,13 +208,14 @@ def step2_compute_features(equity_data, spy_data, macro_data=None):
         window=corr_cfg["standardization_window"],
     )
 
-    # Merge macro features if available
+    # Macro features stored separately (not in mood index to avoid z-score distortion)
+    # Models that use features (KMeans, GMM) access equity cross-section only.
+    # Macro data is available for downstream analysis and future model upgrades.
     if macro_data is not None and len(macro_data) > 0:
-        logger.info(f"Merging {len(macro_data.columns)} macro features...")
         macro_aligned = macro_data.reindex(mood_df.index).ffill().bfill()
-        for col in macro_aligned.columns:
-            mood_df[col] = macro_aligned[col]
-        logger.info(f"Features after macro merge: {mood_df.shape[1]} columns")
+        macro_aligned.to_parquet(RESULTS_DIR / "macro_features_aligned.parquet")
+        logger.info(f"Macro features saved separately: {len(macro_aligned.columns)} columns, "
+                    f"{len(macro_aligned)} days")
 
     # Save standardization parameters (mean, std) for OOS consistency
     feature_stats = mood_df.describe().loc[["mean", "std"]]
@@ -296,21 +297,9 @@ def step3_walk_forward_regimes(mood_df, market_return):
             train_data, test_data, market_ret_aligned, models_cfg.get("markov_switching", {}),
         )
 
-        # --- TabPFN (uses other models' consensus as training labels) ---
-        tabpfn_probs = _fit_predict_tabpfn(
-            train_data, test_data,
-            hmm_probs_train=None,  # Will use 5-model consensus on train data
-            model_probs_train={
-                "hmm": _fit_predict_hmm(train_data, train_data, models_cfg["hmm"]),
-                "garch": _fit_predict_garch(train_data, train_data, market_ret_aligned, models_cfg["garch"]),
-                "kmeans": _fit_predict_kmeans(train_data, train_data, models_cfg["kmeans"]),
-            },
-            models_cfg=models_cfg,
-        )
-
-        # --- 6-model Ensemble ---
+        # --- 5-model Ensemble ---
         ensemble = EnsembleRegimeDetector(
-            weights={"hmm": 0.20, "garch": 0.20, "kmeans": 0.10, "gmm": 0.15, "markov_switching": 0.15, "tabpfn": 0.20},
+            weights={"hmm": 0.25, "garch": 0.25, "kmeans": 0.15, "gmm": 0.20, "markov_switching": 0.15},
             config=models_cfg["ensemble"],
         )
         model_probs = {
@@ -319,7 +308,6 @@ def step3_walk_forward_regimes(mood_df, market_return):
             "kmeans": kmeans_probs,
             "gmm": gmm_probs,
             "markov_switching": ms_probs,
-            "tabpfn": tabpfn_probs,
         }
         combined_probs = ensemble.combine(model_probs)
         ensemble_labels = np.argmax(combined_probs, axis=1)

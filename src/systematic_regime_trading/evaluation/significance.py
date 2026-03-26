@@ -117,6 +117,72 @@ def sharpe_difference_test(
     return point_diff, p_value
 
 
+def bonferroni_correction(p_values: dict, n_tests: int = None) -> dict:
+    """
+    Apply Bonferroni correction to multiple p-values.
+
+    Args:
+        p_values: Dict mapping strategy_name -> raw p-value
+        n_tests: Number of tests (default: len(p_values))
+
+    Returns:
+        Dict mapping strategy_name -> corrected p-value
+    """
+    if n_tests is None:
+        n_tests = len(p_values)
+    return {k: min(v * n_tests, 1.0) for k, v in p_values.items()}
+
+
+def hac_sharpe_se(
+    returns: pd.Series,
+    max_lag: int = None,
+) -> Tuple[float, float, float, float]:
+    """
+    Newey-West HAC-adjusted standard error for Sharpe ratio.
+
+    Accounts for autocorrelation in strategy returns, which inflates
+    naive Sharpe standard errors.
+
+    Args:
+        returns: Daily return series
+        max_lag: Maximum lag for HAC kernel (default: floor(4*(T/100)^(2/9)))
+
+    Returns:
+        (sharpe, hac_se, hac_ci_lower, hac_ci_upper) at 95% confidence
+    """
+    r = returns.values
+    n = len(r)
+
+    if max_lag is None:
+        max_lag = int(4 * (n / 100) ** (2 / 9))
+
+    mu = r.mean()
+    sigma = r.std()
+    sharpe_daily = mu / sigma if sigma > 0 else 0.0
+
+    # Naive variance of Sharpe: (1 + 0.5*SR^2) / T
+    naive_var = (1 + 0.5 * sharpe_daily ** 2) / n
+
+    # HAC correction: add autocovariance terms
+    gamma_0 = np.var(r)
+    hac_sum = 0.0
+    for lag in range(1, max_lag + 1):
+        weight = 1 - lag / (max_lag + 1)  # Bartlett kernel
+        gamma_lag = np.cov(r[lag:], r[:-lag])[0, 1]
+        hac_sum += 2 * weight * gamma_lag / gamma_0
+
+    hac_var = naive_var * (1 + hac_sum)
+    hac_var = max(hac_var, 1e-10)  # floor to avoid sqrt of negative
+
+    sharpe_annual = sharpe_daily * np.sqrt(TRADING_DAYS)
+    hac_se = np.sqrt(hac_var) * np.sqrt(TRADING_DAYS)
+
+    ci_lower = sharpe_annual - 1.96 * hac_se
+    ci_upper = sharpe_annual + 1.96 * hac_se
+
+    return sharpe_annual, hac_se, ci_lower, ci_upper
+
+
 def _sharpe(returns: np.ndarray) -> float:
     """Annualized Sharpe from array."""
     if returns.std() == 0:

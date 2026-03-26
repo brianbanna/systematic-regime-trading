@@ -77,3 +77,61 @@ def apply_vol_target(
     )
 
     return adjusted
+
+
+def apply_regime_vol_target(
+    allocation: pd.Series,
+    returns: pd.Series,
+    regime_labels: pd.Series,
+    vol_targets: dict = None,
+    lookback_days: int = 63,
+    max_leverage: float = 1.0,
+) -> pd.Series:
+    """
+    Regime-conditional vol targeting: different vol target per regime.
+
+    Calm: 12% target (stay invested)
+    Moderate: 8% target
+    Turbulent: 4% target (defensive)
+
+    This lets you maintain more exposure in calm markets while the
+    single-target approach over-cuts.
+
+    Args:
+        allocation: Base allocation signal
+        returns: Market return series
+        regime_labels: Regime labels (0, 1, 2) aligned with allocation
+        vol_targets: Dict mapping regime -> vol target
+        lookback_days: Rolling window for vol estimation
+        max_leverage: Maximum allocation
+
+    Returns:
+        Regime-conditional vol-targeted allocation
+    """
+    if vol_targets is None:
+        vol_targets = {0: 0.12, 1: 0.08, 2: 0.04}
+
+    realized_vol = returns.rolling(
+        window=lookback_days, min_periods=lookback_days,
+    ).std() * np.sqrt(252)
+
+    # Build per-day vol target based on regime
+    common = allocation.index.intersection(regime_labels.index)
+    alloc = allocation.loc[common]
+    labels = regime_labels.loc[common]
+    rvol = realized_vol.reindex(common)
+
+    daily_target = labels.map(vol_targets).fillna(0.10)
+    vol_scalar = daily_target / rvol.clip(lower=1e-6)
+
+    adjusted = alloc * vol_scalar
+    adjusted = adjusted.clip(lower=0.0, upper=max_leverage)
+
+    logger.info(
+        f"Regime vol targeting: calm={vol_targets.get(0, 0.12):.0%}, "
+        f"moderate={vol_targets.get(1, 0.08):.0%}, "
+        f"turbulent={vol_targets.get(2, 0.04):.0%}, "
+        f"mean alloc={adjusted.dropna().mean():.2f}"
+    )
+
+    return adjusted

@@ -24,9 +24,19 @@ strategies:
       moderate: 0.5
       turbulent: 0.0
 
+  regime_vol_targeted:
+    description: "Different vol target per regime"
+    vol_targets:
+      calm: 0.12                # 12% in calm (stay invested)
+      moderate: 0.08            # 8% in moderate
+      turbulent: 0.04           # 4% in turbulent (defensive)
+    vol_lookback_days: 63
+
 signal_filters:
-  confirmation_days: 3        # Require N days in new regime before switching
-  max_daily_allocation_change: 0.25  # Limit allocation change per day
+  confirmation_days: 3                   # Symmetric fallback
+  confirmation_days_defensive: 1         # Fast entry to defensive (calm->turbulent)
+  confirmation_days_risk_on: 5           # Slow return to risk (turbulent->calm)
+  max_daily_allocation_change: 0.25      # Limit allocation change per day
 
 rebalance:
   frequency: "daily"          # daily, weekly, monthly

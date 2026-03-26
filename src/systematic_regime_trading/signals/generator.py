@@ -16,7 +16,7 @@ from systematic_regime_trading.signals.filters import (
     apply_rate_limit,
     apply_execution_lag,
 )
-from systematic_regime_trading.signals.vol_target import apply_vol_target
+from systematic_regime_trading.signals.vol_target import apply_vol_target, apply_regime_vol_target
 
 logger = logging.getLogger(__name__)
 
@@ -72,11 +72,22 @@ def generate_all_signals(
             max_daily_change=filter_config["max_daily_allocation_change"],
         )
 
-        # Step 4: Vol-targeting (only for vol_targeted strategy)
+        # Step 4: Vol-targeting
         if name == "vol_targeted":
             smoothed = apply_vol_target(
                 smoothed, market_returns,
                 config={"strategy": strategy_config, "backtest": backtest_config},
+            )
+        elif name == "regime_vol_targeted":
+            rvt_cfg = strategy_config["strategies"]["regime_vol_targeted"]
+            vol_targets = {int(k): v for k, v in rvt_cfg.get("vol_targets", {}).items()}
+            if not vol_targets:
+                vol_targets = {0: 0.12, 1: 0.08, 2: 0.04}
+            smoothed = apply_regime_vol_target(
+                smoothed, market_returns, regime_labels,
+                vol_targets=vol_targets,
+                lookback_days=rvt_cfg.get("vol_lookback_days", 63),
+                max_leverage=backtest_config["constraints"]["max_leverage"],
             )
 
         # Step 5: Apply execution lag

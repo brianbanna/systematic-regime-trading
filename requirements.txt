@@ -1,0 +1,16 @@
+# Pinned dependencies for reproducibility
+# Python 3.12.13 | conda env: regime-trading
+pandas==3.0.1
+numpy==2.4.3
+scipy==1.17.1
+scikit-learn==1.8.0
+arch==8.0.0
+hmmlearn==0.3.3
+statsmodels==0.14.6
+matplotlib==3.10.8
+seaborn==0.13.2
+plotly==6.6.0
+pyarrow==23.0.1
+pyyaml>=6.0
+yfinance==1.2.0
+tqdm==4.67.3

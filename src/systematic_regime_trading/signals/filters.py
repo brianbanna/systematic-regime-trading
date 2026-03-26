@@ -17,28 +17,38 @@ def apply_confirmation_filter(
     raw_signal: pd.Series,
     regime_labels: pd.Series,
     confirmation_days: int = None,
+    confirmation_days_defensive: int = None,
+    confirmation_days_risk_on: int = None,
     config: dict = None,
 ) -> pd.Series:
     """
-    Anti-whipsaw filter: only switch allocation when new regime
-    persists for N consecutive days.
+    Anti-whipsaw filter with asymmetric confirmation delays.
 
-    Prevents: calm -> turbulent (1 day) -> calm from triggering 2 trades.
-    The signal holds the previous allocation until confirmation.
+    Fast entry to defensive (1 day): the cost of being late into turbulent
+    is much higher than the cost of being late into calm.
+    Slow return to risk-on (5 days): avoids whipsaws during recovery.
 
     Args:
         raw_signal: Raw allocation signal
         regime_labels: Hard regime labels (0, 1, 2)
-        confirmation_days: Days required in new regime before switching
-        config: Strategy config. If None, loads from strategy.yaml
+        confirmation_days: Symmetric fallback (used if asymmetric not provided)
+        confirmation_days_defensive: Days to confirm switch TO turbulent (fast, e.g. 1)
+        confirmation_days_risk_on: Days to confirm switch FROM turbulent (slow, e.g. 5)
+        config: Strategy config
 
     Returns:
         Filtered allocation signal
     """
+    if config is None:
+        config = load_config("strategy")
+    filters = config["signal_filters"]
+
     if confirmation_days is None:
-        if config is None:
-            config = load_config("strategy")
-        confirmation_days = config["signal_filters"]["confirmation_days"]
+        confirmation_days = filters["confirmation_days"]
+    if confirmation_days_defensive is None:
+        confirmation_days_defensive = filters.get("confirmation_days_defensive", confirmation_days)
+    if confirmation_days_risk_on is None:
+        confirmation_days_risk_on = filters.get("confirmation_days_risk_on", confirmation_days)
 
     labels = regime_labels.values
     signal = raw_signal.values.copy()
@@ -58,7 +68,15 @@ def apply_confirmation_filter(
         else:
             consecutive = 1 if labels[t] != labels[t - 1] else consecutive + 1
 
-            if consecutive >= confirmation_days:
+            # Asymmetric: fast to defensive, slow to risk-on
+            if labels[t] == 2:  # switching TO turbulent
+                required = confirmation_days_defensive
+            elif confirmed_regime == 2:  # switching FROM turbulent
+                required = confirmation_days_risk_on
+            else:
+                required = confirmation_days
+
+            if consecutive >= required:
                 confirmed_regime = labels[t]
                 confirmed_signal = signal[t]
                 result[t] = signal[t]

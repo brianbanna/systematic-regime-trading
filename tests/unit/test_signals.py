@@ -106,13 +106,29 @@ class TestLabelsToAllocation:
 
 
 class TestConfirmationFilter:
-    def test_suppresses_brief_regime_changes(self):
-        # Regime: calm for 10 days, turbulent for 1 day, back to calm
+    def test_symmetric_suppresses_brief_regime_changes(self):
+        # With symmetric 3-day confirmation, a 1-day blip is filtered
         labels = pd.Series([0]*10 + [2] + [0]*9)
         signal = pd.Series([1.0]*10 + [0.0] + [1.0]*9)
-        filtered = apply_confirmation_filter(signal, labels, confirmation_days=3)
-        # The 1-day turbulent blip should be filtered out
-        assert filtered.iloc[10] == 1.0  # should hold calm allocation
+        filtered = apply_confirmation_filter(
+            signal, labels,
+            confirmation_days=3,
+            confirmation_days_defensive=3,
+            confirmation_days_risk_on=3,
+        )
+        assert filtered.iloc[10] == 1.0  # 1-day blip filtered out
+
+    def test_asymmetric_fast_defensive(self):
+        # With 1-day defensive confirmation, turbulent triggers immediately
+        labels = pd.Series([0]*10 + [2] + [0]*9)
+        signal = pd.Series([1.0]*10 + [0.0] + [1.0]*9)
+        filtered = apply_confirmation_filter(
+            signal, labels,
+            confirmation_days=3,
+            confirmation_days_defensive=1,
+            confirmation_days_risk_on=5,
+        )
+        assert filtered.iloc[10] == 0.0  # fast defensive: immediate switch
 
 
 class TestRateLimit:

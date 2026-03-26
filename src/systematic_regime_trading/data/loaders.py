@@ -264,6 +264,34 @@ def _fallback_risk_free_rate(start: str, end: str, rate: float = 0.02) -> pd.Dat
     return pd.DataFrame({"Date": dates, "risk_free_rate": rate})
 
 
+def download_spy(start: str, end: str) -> pd.DataFrame:
+    """
+    Download SPY (S&P 500 ETF) for use as market benchmark.
+
+    Args:
+        start: Start date string
+        end: End date string
+
+    Returns:
+        DataFrame with Date, Close, Adj Close, spy_return columns
+    """
+    import yfinance as yf
+
+    logger.info(f"Downloading SPY benchmark data ({start} to {end})")
+
+    spy = yf.download("SPY", start=start, end=end, auto_adjust=False, progress=False)
+    result = pd.DataFrame(index=spy.index)
+    result["Close"] = spy["Close"]
+    result["Adj Close"] = spy["Adj Close"]
+    result["spy_return"] = spy["Adj Close"].pct_change()
+    result = result.reset_index()
+    result.columns = ["Date"] + list(result.columns[1:])
+    result["Date"] = pd.to_datetime(result["Date"])
+
+    logger.info(f"Downloaded SPY: {len(result):,} rows")
+    return result
+
+
 def download_bond_returns(start: str, end: str) -> pd.DataFrame:
     """
     Download TLT (long-term Treasury ETF) for 60/40 benchmark.

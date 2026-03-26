@@ -53,7 +53,18 @@ def compute_transaction_costs(
         position_change >= min_trade_threshold, 0.0,
     )
 
-    costs = position_change * total_cost_rate
+    # Cost model selection
+    cost_model = config.get("cost_model", "linear")
+
+    if cost_model == "sqrt_impact":
+        # Square-root market impact: cost scales with sqrt(trade size)
+        # More realistic for larger trades where market impact is convex
+        impact_coeff = config.get("impact_coefficient", 0.1)
+        linear_cost = position_change * total_cost_rate
+        impact_cost = impact_coeff * np.sqrt(position_change) / 10_000
+        costs = linear_cost + impact_cost
+    else:
+        costs = position_change * total_cost_rate
 
     return costs
 

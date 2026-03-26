@@ -1,4 +1,4 @@
-.PHONY: data features models signals backtest evaluate report website clean all test run
+.PHONY: data features models signals backtest evaluate report website clean all test run figures run-from-scratch website-build
 
 PKG = systematic_regime_trading
 
@@ -29,20 +29,25 @@ evaluate:
 report:
 	python -m $(PKG).visualization.tearsheet
 
-website:
-	@echo "Copy key figures to website/assets/figures/ and open website/index.html"
+website-build:
+	mkdir -p website/assets/figures
+	cp results/figures/*.png website/assets/figures/ 2>/dev/null || true
 
 clean:
 	rm -rf data/processed/*
 	rm -rf results/figures/*
 	rm -rf results/tables/*
 	rm -rf results/tearsheets/*
+	rm -rf results/backtest_results/*
 
 run:
 	python scripts/run_pipeline.py
 
 figures:
 	python scripts/generate_figures.py
+
+run-from-scratch: data-fresh run figures website-build
+	@echo "Full pipeline complete. Results in results/, website in website/"
 
 all: data features models signals backtest evaluate report
 

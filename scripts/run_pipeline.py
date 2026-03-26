@@ -14,7 +14,11 @@ import numpy as np
 import logging
 import time
 import warnings
+import subprocess
+import hashlib
+import sys
 from pathlib import Path
+from datetime import datetime
 
 logging.basicConfig(
     level=logging.INFO,
@@ -487,6 +491,53 @@ def step6_evaluate(backtest_results, predictions, market_return):
     return table
 
 
+def save_run_report(table, elapsed, predictions):
+    """Save reproducibility report with timestamp, git hash, versions, and key metrics."""
+    try:
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=str(get_path(".")),
+            stderr=subprocess.DEVNULL,
+        ).decode().strip()
+    except Exception:
+        git_hash = "unknown"
+
+    # Data checksum
+    try:
+        data_path = get_path("data/processed/equity_data.parquet")
+        checksum = hashlib.md5(data_path.read_bytes()).hexdigest()
+    except Exception:
+        checksum = "unknown"
+
+    lines = [
+        f"Run Report",
+        f"{'=' * 60}",
+        f"Timestamp: {datetime.now().isoformat()}",
+        f"Git hash: {git_hash}",
+        f"Python: {sys.version.split()[0]}",
+        f"Elapsed: {elapsed:.1f}s",
+        f"Data checksum (equity_data.parquet): {checksum}",
+        f"",
+        f"Key package versions:",
+        f"  pandas={pd.__version__}, numpy={np.__version__}",
+        f"",
+        f"OOS predictions: {len(predictions)} days",
+        f"  Date range: {predictions['Date'].min()} to {predictions['Date'].max()}",
+        f"",
+        f"Key Metrics:",
+    ]
+
+    for strategy in table.index:
+        sharpe = table.loc[strategy, "Sharpe"]
+        cagr = table.loc[strategy, "CAGR"]
+        max_dd = table.loc[strategy, "Max_DD"]
+        lines.append(f"  {strategy}: Sharpe={sharpe:.3f}, CAGR={cagr:.2%}, MaxDD={max_dd:.2%}")
+
+    report = "\n".join(lines)
+    report_path = RESULTS_DIR / "run_report.txt"
+    report_path.write_text(report)
+    logger.info(f"Run report saved to {report_path}")
+
+
 def main():
     start_time = time.time()
 
@@ -515,6 +566,10 @@ def main():
     table = step6_evaluate(backtest_results, predictions, mkt_ret_aligned)
 
     elapsed = time.time() - start_time
+
+    # Save run report for reproducibility
+    save_run_report(table, elapsed, predictions)
+
     logger.info(f"Pipeline complete in {elapsed:.1f}s")
     print(f"\nAll results saved to {RESULTS_DIR}/")
 

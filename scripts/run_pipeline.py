@@ -51,7 +51,9 @@ from systematic_regime_trading.models.garch import GARCHRegimeDetector
 from systematic_regime_trading.models.kmeans import KMeansRegimeDetector
 from systematic_regime_trading.models.gmm import GMMRegimeDetector
 from systematic_regime_trading.models.markov_switching import MarkovSwitchingRegimeDetector
+from systematic_regime_trading.models.tabpfn_model import TabPFNRegimeDetector
 from systematic_regime_trading.models.ensemble import EnsembleRegimeDetector
+from systematic_regime_trading.data.macro import download_macro_features, compute_derived_macro_features
 from systematic_regime_trading.signals.generator import generate_all_signals
 from systematic_regime_trading.backtest.engine import run_backtest, run_all_backtests
 from systematic_regime_trading.backtest.sensitivity import cost_sensitivity, find_breakeven_cost
@@ -127,11 +129,23 @@ def step1_load_data():
         tlt_data = None
         logger.warning("TLT data not found")
 
-    return equity_data, spy_data, vix_data, tlt_data
+    # Load or download macro data
+    macro_cache = RESULTS_DIR / "macro_features.parquet"
+    if macro_cache.exists():
+        macro_data = pd.read_parquet(macro_cache)
+        logger.info(f"Macro data: {len(macro_data):,} rows (cached)")
+    else:
+        logger.info("Downloading macro data from FRED...")
+        macro_data = download_macro_features(start, end)
+        macro_data = compute_derived_macro_features(macro_data)
+        if len(macro_data) > 0:
+            macro_data.to_parquet(macro_cache)
+
+    return equity_data, spy_data, vix_data, tlt_data, macro_data
 
 
-def step2_compute_features(equity_data, spy_data):
-    """Compute market-level features from raw data. Use SPY as market return."""
+def step2_compute_features(equity_data, spy_data, macro_data=None):
+    """Compute market-level features + macro data. Use SPY as market return."""
     logger.info("=" * 60)
     logger.info("STEP 2: Computing features")
     logger.info("=" * 60)
@@ -193,6 +207,19 @@ def step2_compute_features(equity_data, spy_data):
         indicators_dict,
         window=corr_cfg["standardization_window"],
     )
+
+    # Merge macro features if available
+    if macro_data is not None and len(macro_data) > 0:
+        logger.info(f"Merging {len(macro_data.columns)} macro features...")
+        macro_aligned = macro_data.reindex(mood_df.index).ffill().bfill()
+        for col in macro_aligned.columns:
+            mood_df[col] = macro_aligned[col]
+        logger.info(f"Features after macro merge: {mood_df.shape[1]} columns")
+
+    # Save standardization parameters (mean, std) for OOS consistency
+    feature_stats = mood_df.describe().loc[["mean", "std"]]
+    feature_stats.to_parquet(RESULTS_DIR / "feature_standardization.parquet")
+    logger.info("Saved feature standardization parameters for OOS consistency")
 
     # SPY as market return for backtesting (not equal-weight NASDAQ)
     spy_returns = spy_data.set_index("Date")["spy_return"].dropna()
@@ -269,9 +296,21 @@ def step3_walk_forward_regimes(mood_df, market_return):
             train_data, test_data, market_ret_aligned, models_cfg.get("markov_switching", {}),
         )
 
-        # --- 5-model Ensemble ---
+        # --- TabPFN (uses other models' consensus as training labels) ---
+        tabpfn_probs = _fit_predict_tabpfn(
+            train_data, test_data,
+            hmm_probs_train=None,  # Will use 5-model consensus on train data
+            model_probs_train={
+                "hmm": _fit_predict_hmm(train_data, train_data, models_cfg["hmm"]),
+                "garch": _fit_predict_garch(train_data, train_data, market_ret_aligned, models_cfg["garch"]),
+                "kmeans": _fit_predict_kmeans(train_data, train_data, models_cfg["kmeans"]),
+            },
+            models_cfg=models_cfg,
+        )
+
+        # --- 6-model Ensemble ---
         ensemble = EnsembleRegimeDetector(
-            weights={"hmm": 0.25, "garch": 0.25, "kmeans": 0.15, "gmm": 0.20, "markov_switching": 0.15},
+            weights={"hmm": 0.20, "garch": 0.20, "kmeans": 0.10, "gmm": 0.15, "markov_switching": 0.15, "tabpfn": 0.20},
             config=models_cfg["ensemble"],
         )
         model_probs = {
@@ -280,6 +319,7 @@ def step3_walk_forward_regimes(mood_df, market_return):
             "kmeans": kmeans_probs,
             "gmm": gmm_probs,
             "markov_switching": ms_probs,
+            "tabpfn": tabpfn_probs,
         }
         combined_probs = ensemble.combine(model_probs)
         ensemble_labels = np.argmax(combined_probs, axis=1)
@@ -426,6 +466,51 @@ def _fit_predict_gmm(train_data, test_data, gmm_cfg):
         return probs[:len(test_data)]
     except Exception as e:
         logger.warning(f"GMM failed: {e}, using uniform probs")
+        return np.full((len(test_data), 3), 1/3)
+
+
+def _fit_predict_tabpfn(train_data, test_data, hmm_probs_train, model_probs_train, models_cfg):
+    """Fit TabPFN on training data with consensus labels, predict test."""
+    try:
+        feature_cols = [c for c in train_data.columns
+                        if c not in ["Date", "window_id"] and train_data[c].dtype in [np.float64, np.float32, float]]
+        if len(feature_cols) < 2:
+            return np.full((len(test_data), 3), 1/3)
+
+        train_X = train_data[feature_cols].dropna()
+        test_X = test_data[feature_cols].dropna()
+
+        if len(train_X) < 100 or len(test_X) == 0:
+            return np.full((len(test_data), 3), 1/3)
+
+        # Generate consensus labels from other models for training
+        n_train = len(train_X)
+        if model_probs_train:
+            # Average probabilities from available models, take argmax
+            all_probs = []
+            for name, probs in model_probs_train.items():
+                if len(probs) >= n_train:
+                    all_probs.append(probs[:n_train])
+            if all_probs:
+                avg_probs = np.mean(all_probs, axis=0)
+                train_labels = np.argmax(avg_probs, axis=1)
+            else:
+                return np.full((len(test_data), 3), 1/3)
+        else:
+            return np.full((len(test_data), 3), 1/3)
+
+        detector = TabPFNRegimeDetector(models_cfg.get("tabpfn", {}))
+        detector.fit(train_X.values[:len(train_labels)], train_labels)
+        probs = detector.predict_proba(test_X)
+
+        if len(probs) < len(test_data):
+            padded = np.full((len(test_data), 3), 1/3)
+            padded[:len(probs)] = probs
+            return padded
+
+        return probs[:len(test_data)]
+    except Exception as e:
+        logger.warning(f"TabPFN failed: {e}, using uniform probs")
         return np.full((len(test_data), 3), 1/3)
 
 
@@ -816,10 +901,10 @@ def main():
     setup_results_dirs()
 
     # Step 1: Load data
-    equity_data, spy_data, vix_data, tlt_data = step1_load_data()
+    equity_data, spy_data, vix_data, tlt_data, macro_data = step1_load_data()
 
-    # Step 2: Compute features (SPY as benchmark, not equal-weight NASDAQ)
-    df_ret, mood_df, market_return, vol_df = step2_compute_features(equity_data, spy_data)
+    # Step 2: Compute features (SPY benchmark + macro data)
+    df_ret, mood_df, market_return, vol_df = step2_compute_features(equity_data, spy_data, macro_data)
 
     # Step 3: Walk-forward regime detection
     predictions = step3_walk_forward_regimes(mood_df, market_return)

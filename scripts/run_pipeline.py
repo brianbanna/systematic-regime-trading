@@ -63,7 +63,12 @@ from systematic_regime_trading.evaluation.report import (
 from systematic_regime_trading.evaluation.regime_perf import (
     performance_by_regime, crisis_performance,
 )
-from systematic_regime_trading.evaluation.significance import bootstrap_sharpe_ci
+from systematic_regime_trading.evaluation.significance import (
+    bootstrap_sharpe_ci, sharpe_difference_test, bonferroni_correction, hac_sharpe_se,
+)
+from systematic_regime_trading.evaluation.factor_regression import (
+    download_ff_factors, run_factor_regressions,
+)
 
 
 RESULTS_DIR = get_path("results")
@@ -546,16 +551,66 @@ def step6_evaluate(backtest_results, predictions, market_return):
     for name, be in breakeven_costs.items():
         print(f"  {name}: {be:.1f} bps")
 
-    # Save Sharpe CIs
+    # Save Sharpe CIs (bootstrap + HAC-adjusted)
     ci_rows = []
     for name, bt in backtest_results.items():
         try:
             sharpe, lower, upper = bootstrap_sharpe_ci(bt["net_return"], n_bootstrap=1000)
-            ci_rows.append({"strategy": name, "sharpe": sharpe, "ci_lower": lower, "ci_upper": upper})
+            _, hac_se, hac_lower, hac_upper = hac_sharpe_se(bt["net_return"])
+            ci_rows.append({
+                "strategy": name, "sharpe": sharpe,
+                "bootstrap_ci_lower": lower, "bootstrap_ci_upper": upper,
+                "hac_se": hac_se, "hac_ci_lower": hac_lower, "hac_ci_upper": hac_upper,
+            })
         except Exception:
             pass
     if ci_rows:
         pd.DataFrame(ci_rows).to_csv(RESULTS_DIR / "sharpe_ci.csv", index=False)
+
+    # Sharpe difference tests vs buy-and-hold
+    logger.info("Running Sharpe difference tests vs buy-and-hold...")
+    if "buy_and_hold" in backtest_results:
+        bench_ret = backtest_results["buy_and_hold"]["net_return"]
+        raw_pvalues = {}
+        diff_rows = []
+        for name, bt in backtest_results.items():
+            if name == "buy_and_hold":
+                continue
+            diff, pval = sharpe_difference_test(bt["net_return"], bench_ret, n_bootstrap=5000)
+            raw_pvalues[name] = pval
+            diff_rows.append({"strategy": name, "sharpe_diff": diff, "p_value_raw": pval})
+
+        # Bonferroni correction
+        corrected = bonferroni_correction(raw_pvalues)
+        for row in diff_rows:
+            row["p_value_bonferroni"] = corrected[row["strategy"]]
+
+        diff_df = pd.DataFrame(diff_rows)
+        diff_df.to_csv(RESULTS_DIR / "sharpe_tests.csv", index=False)
+
+        print("\nSharpe Difference Tests vs Buy-and-Hold:")
+        for _, row in diff_df.iterrows():
+            sig = "*" if row["p_value_bonferroni"] < 0.05 else ""
+            print(f"  {row['strategy']}: diff={row['sharpe_diff']:+.3f}, "
+                  f"p={row['p_value_raw']:.3f}, p_bonf={row['p_value_bonferroni']:.3f} {sig}")
+
+    # Fama-French factor regression
+    logger.info("Running Fama-French factor regressions...")
+    try:
+        ff_factors = download_ff_factors()
+        ff_results = run_factor_regressions(backtest_results, ff_factors)
+        ff_results.to_csv(RESULTS_DIR / "factor_regression.csv")
+
+        print("\nFama-French Alpha (annualized):")
+        for name in ff_results.index:
+            alpha = ff_results.loc[name, "alpha_annual"]
+            tstat = ff_results.loc[name, "alpha_tstat"]
+            pval = ff_results.loc[name, "alpha_pvalue"]
+            r2 = ff_results.loc[name, "r_squared"]
+            sig = "*" if pval < 0.05 else ""
+            print(f"  {name}: alpha={alpha:.2%}, t={tstat:.2f}, p={pval:.3f}, R2={r2:.3f} {sig}")
+    except Exception as e:
+        logger.warning(f"Factor regression failed: {e}")
 
     return table
 

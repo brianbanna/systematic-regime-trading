@@ -1,9 +1,9 @@
 Run Report
 ============================================================
-Timestamp: 2026-03-26T08:40:13.580933
-Git hash: d4042925d3b7a1d415a7fc252d3a46973703d913
+Timestamp: 2026-03-26T09:01:08.946602
+Git hash: 3d6c178c421c25063344769ffb20a6da5eb3d53c
 Python: 3.12.13
-Elapsed: 97.3s
+Elapsed: 346.8s
 Data checksum (equity_data.parquet): f20920d51a4d6b0dec512b40b481c254
 
 Key package versions:
@@ -13,11 +13,11 @@ OOS predictions: 3771 days
   Date range: 2006-01-09 00:00:00 to 2020-12-30 00:00:00
 
 Key Metrics:
-  regime_momentum: Sharpe=0.519, CAGR=7.05%, MaxDD=-31.70%
+  regime_momentum: Sharpe=0.743, CAGR=8.87%, MaxDD=-14.07%
+  binary_regime: Sharpe=0.487, CAGR=6.29%, MaxDD=-26.06%
   vol_managed: Sharpe=0.471, CAGR=6.58%, MaxDD=-23.69%
   sma_200: Sharpe=0.470, CAGR=7.04%, MaxDD=-21.89%
   buy_and_hold: Sharpe=0.455, CAGR=9.55%, MaxDD=-55.19%
-  binary_regime: Sharpe=0.338, CAGR=5.04%, MaxDD=-30.30%
+  proportional_regime: Sharpe=0.387, CAGR=4.58%, MaxDD=-16.55%
   vix_20: Sharpe=0.270, CAGR=4.16%, MaxDD=-22.35%
-  proportional_regime: Sharpe=0.198, CAGR=3.34%, MaxDD=-24.57%
-  vol_targeted: Sharpe=-0.029, CAGR=1.73%, MaxDD=-11.43%
+  vol_targeted: Sharpe=0.160, CAGR=2.71%, MaxDD=-10.19%

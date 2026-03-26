@@ -71,6 +71,11 @@ from systematic_regime_trading.evaluation.significance import (
 from systematic_regime_trading.evaluation.factor_regression import (
     download_ff_factors, run_factor_regressions,
 )
+from systematic_regime_trading.evaluation.prediction_quality import (
+    regime_prediction_accuracy, regime_lead_time, signal_decay_analysis,
+    calendar_decomposition, carry_cost_of_defensiveness,
+    drawdown_duration_analysis, crisis_walkthrough,
+)
 
 
 RESULTS_DIR = get_path("results")
@@ -683,6 +688,77 @@ def step6_evaluate(backtest_results, predictions, market_return):
             print(f"  {name}: alpha={alpha:.2%}, t={tstat:.2f}, p={pval:.3f}, R2={r2:.3f} {sig}")
     except Exception as e:
         logger.warning(f"Factor regression failed: {e}")
+
+    # === NEW ANALYSIS ===
+
+    # Regime prediction accuracy
+    logger.info("Regime prediction accuracy...")
+    regime_labels_series = predictions.set_index("Date")["regime_label"]
+    pred_acc = regime_prediction_accuracy(market_return, regime_labels_series)
+    pred_acc.to_csv(RESULTS_DIR / "prediction_accuracy.csv", index=False)
+    print("\nRegime Prediction Accuracy (realized vol by predicted regime):")
+    print(pred_acc.to_string(index=False))
+
+    # Regime lead time
+    logger.info("Regime prediction lead time...")
+    lead_time = regime_lead_time(market_return, regime_labels_series)
+    if len(lead_time) > 0:
+        lead_time.to_csv(RESULTS_DIR / "regime_lead_time.csv", index=False)
+        median_lead = lead_time["lead_time_days"].dropna().median()
+        print(f"\nMedian regime lead time: {median_lead:.0f} days before drawdown")
+
+    # Signal decay / IC
+    if "regime_momentum" in backtest_results:
+        logger.info("Signal decay analysis...")
+        bt_rm = backtest_results["regime_momentum"]
+        ic_df = signal_decay_analysis(bt_rm["position"], market_return)
+        ic_df.to_csv(RESULTS_DIR / "signal_decay.csv", index=False)
+        print("\nSignal Decay (Information Coefficient by horizon):")
+        print(ic_df.to_string(index=False))
+
+    # Calendar effects
+    if "regime_momentum" in backtest_results and "buy_and_hold" in backtest_results:
+        logger.info("Calendar decomposition...")
+        cal = calendar_decomposition(
+            backtest_results["regime_momentum"]["net_return"],
+            backtest_results["buy_and_hold"]["net_return"],
+        )
+        cal["monthly"].to_csv(RESULTS_DIR / "calendar_monthly.csv", index=False)
+        cal["yearly"].to_csv(RESULTS_DIR / "calendar_yearly.csv", index=False)
+
+    # Carry cost of defensiveness
+    if "regime_momentum" in backtest_results:
+        logger.info("Carry cost analysis...")
+        carry = carry_cost_of_defensiveness(
+            backtest_results["regime_momentum"]["position"],
+            market_return,
+        )
+        print(f"\nCarry Cost of Defensiveness:")
+        print(f"  Missed gains: {carry['total_missed_gains']:.2%}")
+        print(f"  Avoided losses: {carry['total_avoided_losses']:.2%}")
+        print(f"  Net value: {carry['net_value_of_defensiveness']:.2%}")
+        print(f"  Avg position: {carry['avg_daily_position']:.1%}")
+        pd.DataFrame([carry]).to_csv(RESULTS_DIR / "carry_cost.csv", index=False)
+
+    # Drawdown duration analysis
+    logger.info("Drawdown duration analysis...")
+    dd_dur = drawdown_duration_analysis(backtest_results)
+    dd_dur.to_csv(RESULTS_DIR / "drawdown_durations.csv")
+    print("\nDrawdown Duration (trading days):")
+    print(dd_dur[["max_drawdown", "max_dd_duration", "avg_dd_duration"]].to_string())
+
+    # Crisis walkthrough (2008)
+    if "regime_momentum" in backtest_results:
+        logger.info("Crisis walkthrough (2008)...")
+        walkthrough = crisis_walkthrough(
+            predictions, backtest_results["regime_momentum"],
+            market_return, start="2008-09-01", end="2008-12-31",
+        )
+        walkthrough.to_csv(RESULTS_DIR / "crisis_walkthrough_2008.csv", index=False)
+        if len(walkthrough) > 0:
+            print(f"\n2008 Crisis Walkthrough ({len(walkthrough)} days):")
+            print(f"  Market: {walkthrough['cum_market'].iloc[-1] - 1:.1%}")
+            print(f"  Strategy: {walkthrough['cum_strategy'].iloc[-1] - 1:.1%}")
 
     return table
 

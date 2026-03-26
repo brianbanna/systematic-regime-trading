@@ -41,6 +41,9 @@ clean:
 run:
 	python scripts/run_pipeline.py
 
+figures:
+	python scripts/generate_figures.py
+
 all: data features models signals backtest evaluate report
 
 test:

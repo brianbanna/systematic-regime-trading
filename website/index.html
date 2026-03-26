@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Systematic Regime Trading | Quant Research</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Hero -->
+<header class="hero">
+    <div class="container">
+        <h1>Systematic Regime Trading</h1>
+        <p class="tagline">Using HMM, GARCH, and K-Means to detect market regimes and generate allocation signals for US equities</p>
+        <div class="badges">
+            <div class="badge">
+                <div class="value">1.05</div>
+                <div class="label">Sharpe Ratio</div>
+            </div>
+            <div class="badge">
+                <div class="value">-22%</div>
+                <div class="label">Max Drawdown</div>
+            </div>
+            <div class="badge">
+                <div class="value">16.0%</div>
+                <div class="label">CAGR</div>
+            </div>
+            <div class="badge">
+                <div class="value">>40 bps</div>
+                <div class="label">Breakeven Cost</div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+
+<!-- Research Question -->
+<section>
+    <h2>Research Question</h2>
+    <p>Can statistical regime detection models produce actionable allocation signals for systematic equity trading that survive realistic transaction costs and outperform static benchmarks on a risk-adjusted basis?</p>
+    <p>This project combines three unsupervised learning approaches &mdash; Hidden Markov Models, GARCH conditional volatility, and K-Means clustering &mdash; into an ensemble that classifies each trading day as <span class="regime-calm">Calm</span>, <span class="regime-moderate">Moderate</span>, or <span class="regime-turbulent">Turbulent</span>. These classifications drive allocation signals that reduce equity exposure during high-risk periods.</p>
+</section>
+
+<!-- Methodology -->
+<section>
+    <h2>Methodology</h2>
+    <div class="pipeline">
+        <span class="pipeline-step">190 NASDAQ Stocks</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Market Features</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">3 Regime Models</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Ensemble</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Allocation Signal</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Backtest</span>
+    </div>
+    <p><strong>Data:</strong> 190 NASDAQ-listed stocks, daily OHLCV data from 2000 to 2020. Cross-sectional features computed: market volatility, breadth, direction, correlation, ATR, and volume.</p>
+    <p><strong>Models:</strong> Walk-forward validation with expanding window (5-year minimum training). Quarterly refit. 59 out-of-sample windows producing 3,771 strictly out-of-sample predictions (2006&ndash;2020). No model ever sees future data.</p>
+    <p><strong>Strategies:</strong> Four variants tested &mdash; binary regime switching, proportional allocation, volatility-targeted, and regime momentum. All signals include a 3-day confirmation filter, rate limiter, and 1-day execution lag.</p>
+</section>
+
+<!-- Regime Detection -->
+<section>
+    <h2>Regime Detection</h2>
+    <p>The ensemble classifies 55% of days as <span class="regime-calm">Calm</span>, 17% as <span class="regime-moderate">Moderate</span>, and 29% as <span class="regime-turbulent">Turbulent</span>. Regimes are highly persistent &mdash; the transition matrix shows >90% self-transition probability for calm markets.</p>
+
+    <div class="chart-container">
+        <img src="assets/figures/06_regime_timeline.png" alt="Regime Timeline" loading="lazy">
+        <div class="chart-caption">Top: Market equity curve with regime background shading. Bottom: Ensemble regime probabilities over time. Note the sharp shift to turbulent during the 2008 financial crisis and COVID-19.</div>
+    </div>
+
+    <div class="chart-container">
+        <img src="assets/figures/07_transition_matrix.png" alt="Transition Matrix" loading="lazy">
+        <div class="chart-caption">Regime transition probabilities. Calm regimes are highly sticky (97% self-transition). Turbulent regimes have a 6% daily probability of reverting to calm.</div>
+    </div>
+</section>
+
+<!-- Strategy Design -->
+<section>
+    <h2>Strategy Design</h2>
+    <p>The best-performing strategy (<strong>Regime Momentum</strong>) increases allocation when calm regimes persist and reduces exposure during regime transitions. The signal goes fully defensive (0% equity) only in confirmed turbulent regimes.</p>
+
+    <div class="chart-container">
+        <img src="assets/figures/10_allocation.png" alt="Allocation Over Time" loading="lazy">
+        <div class="chart-caption">Regime Momentum allocation signal over time. The strategy reduces equity exposure during the 2008 crisis and briefly during the 2020 COVID crash.</div>
+    </div>
+
+    <div class="chart-container">
+        <img src="assets/figures/11_signal_vs_drawdown.png" alt="Signal vs Drawdown" loading="lazy">
+        <div class="chart-caption">Allocation signal (blue area) vs market drawdown (red). The strategy reduces exposure before and during major drawdowns, limiting losses.</div>
+    </div>
+</section>
+
+<!-- Performance -->
+<section>
+    <h2>Performance</h2>
+
+    <div class="chart-container">
+        <img src="assets/figures/01_cumulative_returns.png" alt="Cumulative Returns" loading="lazy">
+        <div class="chart-caption">Growth of $1 invested. Regime Momentum achieves a smoother ride than buy-and-hold, avoiding the deepest drawdowns while capturing most of the upside.</div>
+    </div>
+
+    <div class="chart-container">
+        <img src="assets/figures/02_drawdown.png" alt="Drawdown" loading="lazy">
+        <div class="chart-caption">Drawdown from peak. Buy-and-hold suffered a -55% drawdown in 2008; Regime Momentum limited it to -22%.</div>
+    </div>
+
+    <h3>Performance Comparison</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Strategy</th>
+                <th>CAGR</th>
+                <th>Vol</th>
+                <th>Sharpe</th>
+                <th>Sortino</th>
+                <th>Max DD</th>
+                <th>Turnover</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="highlight">
+                <td>Regime Momentum</td>
+                <td class="positive">16.0%</td>
+                <td>13.0%</td>
+                <td class="positive">1.05</td>
+                <td>1.38</td>
+                <td>-22.4%</td>
+                <td>9.2x</td>
+            </tr>
+            <tr>
+                <td>Buy &amp; Hold</td>
+                <td class="positive">24.5%</td>
+                <td>23.5%</td>
+                <td>0.97</td>
+                <td>1.23</td>
+                <td class="negative">-54.6%</td>
+                <td>0.0x</td>
+            </tr>
+            <tr>
+                <td>Binary Regime</td>
+                <td class="positive">13.3%</td>
+                <td>12.4%</td>
+                <td>0.91</td>
+                <td>1.22</td>
+                <td>-26.0%</td>
+                <td>20.0x</td>
+            </tr>
+            <tr>
+                <td>Proportional</td>
+                <td class="positive">10.2%</td>
+                <td>9.8%</td>
+                <td>0.83</td>
+                <td>1.09</td>
+                <td>-20.4%</td>
+                <td>20.0x</td>
+            </tr>
+            <tr>
+                <td>Vol-Targeted</td>
+                <td>4.5%</td>
+                <td>4.9%</td>
+                <td>0.52</td>
+                <td>0.66</td>
+                <td>-9.2%</td>
+                <td>13.2x</td>
+            </tr>
+        </tbody>
+    </table>
+    <p>Regime Momentum has the highest risk-adjusted return (Sharpe 1.05) while cutting max drawdown by more than half relative to buy-and-hold. Bootstrap 95% confidence interval for Sharpe: [0.74, 1.68] &mdash; statistically significant.</p>
+</section>
+
+<!-- Rolling Sharpe -->
+<section>
+    <h2>Rolling Performance</h2>
+    <div class="chart-container">
+        <img src="assets/figures/04_rolling_sharpe.png" alt="Rolling Sharpe" loading="lazy">
+        <div class="chart-caption">Rolling 1-year Sharpe ratio. The strategy consistently outperforms during volatile periods (2008, 2011, 2020) when risk management matters most.</div>
+    </div>
+
+    <div class="chart-container">
+        <img src="assets/figures/03_monthly_heatmap.png" alt="Monthly Heatmap" loading="lazy">
+        <div class="chart-caption">Monthly returns heatmap for Regime Momentum. Green cells dominate, with the worst months limited to single-digit losses.</div>
+    </div>
+</section>
+
+<!-- Cost Sensitivity -->
+<section>
+    <h2>Cost Sensitivity</h2>
+    <div class="chart-container">
+        <img src="assets/figures/05_cost_sensitivity.png" alt="Cost Sensitivity" loading="lazy">
+        <div class="chart-caption">Sharpe ratio at different transaction cost levels. All strategies remain profitable well beyond 20 bps one-way costs. Regime Momentum breaks even at >50 bps.</div>
+    </div>
+    <p>The breakeven cost analysis is the most practically relevant output. Institutional equity transaction costs are typically 5&ndash;10 bps. All strategy variants survive at these levels with substantial margin.</p>
+</section>
+
+<!-- Regime Performance -->
+<section>
+    <h2>Where Does Alpha Come From?</h2>
+    <div class="chart-container">
+        <img src="assets/figures/09_regime_performance.png" alt="Regime Performance" loading="lazy">
+        <div class="chart-caption">Performance decomposed by regime. The strategy captures high returns during calm markets (Sharpe 1.79) while limiting exposure during turbulent periods.</div>
+    </div>
+    <p>64% of total return is generated during <span class="regime-calm">Calm</span> regimes, despite calm days representing only 55% of the sample. The strategy's edge comes from correctly identifying and overweighting calm periods, not from timing turbulent exits.</p>
+</section>
+
+<!-- Model Agreement -->
+<section>
+    <h2>Model Diagnostics</h2>
+    <div class="chart-container">
+        <img src="assets/figures/12_model_agreement.png" alt="Model Agreement" loading="lazy">
+        <div class="chart-caption">Pairwise agreement rates between the three regime models. HMM and KMeans agree most frequently, while GARCH provides independent signal.</div>
+    </div>
+    <div class="chart-container">
+        <img src="assets/figures/08_regime_distribution.png" alt="Regime Distribution" loading="lazy">
+        <div class="chart-caption">Regime distribution by period. The 2008&ndash;2009 period shows a dramatic shift toward turbulent regimes, while 2010&ndash;2019 is predominantly calm.</div>
+    </div>
+</section>
+
+<!-- Limitations -->
+<section>
+    <h2>Limitations</h2>
+    <p><strong>Survivorship bias:</strong> The 190-ticker universe is selected from currently listed stocks. Delisted companies (66 tickers) are excluded, which may overstate returns.</p>
+    <p><strong>Equal-weight market return:</strong> The backtest uses an equal-weight cross-sectional return as the market proxy, not a capitalization-weighted index. Results may differ with SPY or QQQ.</p>
+    <p><strong>No 60/40 or risk parity benchmarks:</strong> TLT data starts in 2002, limiting the multi-asset benchmark comparison to a shorter period. Only buy-and-hold is compared over the full out-of-sample window.</p>
+    <p><strong>Transaction cost model:</strong> The cost model uses fixed bps per trade. Real-world costs vary by trade size, market impact, and urgency. The breakeven analysis provides a buffer.</p>
+    <p><strong>Out-of-sample period:</strong> 2006&ndash;2020 includes one major bull market (2009&ndash;2020) and two crises (2008, COVID). Performance in other market structures is unknown.</p>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <p>Built with Python, pandas, scikit-learn, hmmlearn, and arch. All code and data available on <a href="https://github.com/">GitHub</a>.</p>
+    </div>
+</footer>
+
+</body>
+</html>

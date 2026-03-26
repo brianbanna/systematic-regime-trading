@@ -25,6 +25,18 @@ kmeans:
     volvol: ["market_volatility", "market_volume"]
     mood: ["mood_index"]
 
+gmm:
+  n_components: 3
+  covariance_type: "full"
+  random_state: 42
+  features:
+    volvol: ["market_volatility", "market_volume"]
+
+markov_switching:
+  n_regimes: 3
+  switching_variance: true
+  random_state: 42
+
 ensemble:
   method: "weighted_vote"
   min_weight: 0.10

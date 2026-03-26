@@ -49,6 +49,8 @@ from systematic_regime_trading.features.indicators import (
 from systematic_regime_trading.models.hmm import HMMRegimeDetector
 from systematic_regime_trading.models.garch import GARCHRegimeDetector
 from systematic_regime_trading.models.kmeans import KMeansRegimeDetector
+from systematic_regime_trading.models.gmm import GMMRegimeDetector
+from systematic_regime_trading.models.markov_switching import MarkovSwitchingRegimeDetector
 from systematic_regime_trading.models.ensemble import EnsembleRegimeDetector
 from systematic_regime_trading.signals.generator import generate_all_signals
 from systematic_regime_trading.backtest.engine import run_backtest, run_all_backtests
@@ -254,12 +256,25 @@ def step3_walk_forward_regimes(mood_df, market_return):
         # --- KMeans ---
         kmeans_probs = _fit_predict_kmeans(train_data, test_data, models_cfg["kmeans"])
 
-        # --- Ensemble ---
-        ensemble = EnsembleRegimeDetector(config=models_cfg["ensemble"])
+        # --- GMM ---
+        gmm_probs = _fit_predict_gmm(train_data, test_data, models_cfg.get("gmm", {}))
+
+        # --- Markov-Switching ---
+        ms_probs = _fit_predict_markov_switching(
+            train_data, test_data, market_ret_aligned, models_cfg.get("markov_switching", {}),
+        )
+
+        # --- 5-model Ensemble ---
+        ensemble = EnsembleRegimeDetector(
+            weights={"hmm": 0.25, "garch": 0.25, "kmeans": 0.15, "gmm": 0.20, "markov_switching": 0.15},
+            config=models_cfg["ensemble"],
+        )
         model_probs = {
             "hmm": hmm_probs,
             "garch": garch_probs,
             "kmeans": kmeans_probs,
+            "gmm": gmm_probs,
+            "markov_switching": ms_probs,
         }
         combined_probs = ensemble.combine(model_probs)
         ensemble_labels = np.argmax(combined_probs, axis=1)
@@ -273,6 +288,8 @@ def step3_walk_forward_regimes(mood_df, market_return):
             "hmm_label": np.argmax(hmm_probs, axis=1),
             "garch_label": np.argmax(garch_probs, axis=1),
             "kmeans_label": np.argmax(kmeans_probs, axis=1),
+            "gmm_label": np.argmax(gmm_probs, axis=1),
+            "ms_label": np.argmax(ms_probs, axis=1),
             "window_id": window_id,
         })
 
@@ -374,6 +391,61 @@ def _fit_predict_kmeans(train_data, test_data, kmeans_cfg):
         return probs[:len(test_data)]
     except Exception as e:
         logger.warning(f"KMeans failed: {e}, using uniform probs")
+        return np.full((len(test_data), 3), 1/3)
+
+
+def _fit_predict_gmm(train_data, test_data, gmm_cfg):
+    """Fit GMM on train features, predict probabilities on test."""
+    try:
+        feature_cols = ["market_volatility", "market_volume"]
+        available = [c for c in feature_cols if c in train_data.columns]
+
+        if len(available) == 0:
+            return np.full((len(test_data), 3), 1/3)
+
+        train_X = train_data[available].dropna()
+        test_X = test_data[available].dropna()
+
+        if len(train_X) < 50 or len(test_X) == 0:
+            return np.full((len(test_data), 3), 1/3)
+
+        detector = GMMRegimeDetector(gmm_cfg)
+        detector.fit(train_X)
+        probs = detector.predict_proba(test_X)
+
+        if len(probs) < len(test_data):
+            padded = np.full((len(test_data), 3), 1/3)
+            padded[:len(probs)] = probs
+            return padded
+
+        return probs[:len(test_data)]
+    except Exception as e:
+        logger.warning(f"GMM failed: {e}, using uniform probs")
+        return np.full((len(test_data), 3), 1/3)
+
+
+def _fit_predict_markov_switching(train_data, test_data, market_return, ms_cfg):
+    """Fit Markov-Switching on train returns, predict probabilities on test."""
+    try:
+        train_dates = train_data["Date"].values
+        test_dates = test_data["Date"].values
+
+        train_ret = market_return.loc[market_return.index.isin(train_dates)]
+        test_ret = market_return.loc[market_return.index.isin(test_dates)]
+
+        if len(train_ret) < 200:
+            return np.full((len(test_data), 3), 1/3)
+
+        detector = MarkovSwitchingRegimeDetector(ms_cfg)
+        detector.fit(train_ret)
+
+        if not detector.is_fitted_:
+            return np.full((len(test_data), 3), 1/3)
+
+        probs = detector.predict_proba(test_ret)
+        return probs[:len(test_data)]
+    except Exception as e:
+        logger.warning(f"MarkovSwitching failed: {e}, using uniform probs")
         return np.full((len(test_data), 3), 1/3)
 
 

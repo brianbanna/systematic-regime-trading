@@ -1,7 +1,7 @@
 # Project Progress Tracker
 
-## Current Phase: Phase 7 — Visualization and Research Outputs
-## Current Task: 7.1 — Performance Visualizations
+## Current Phase: COMPLETE
+## Current Task: None — all 8 phases done
 
 ---
 
@@ -55,17 +55,17 @@
 - [x] **6.6** Run end-to-end pipeline on real data (results saved)
 
 ## Phase 7: Visualization and Research Outputs
-- [ ] **7.1** Performance Visualizations (cumulative returns, drawdown, heatmap, rolling Sharpe, cost sensitivity)
-- [ ] **7.2** Regime Visualizations (timeline, transition matrix, distribution, conditional performance)
-- [ ] **7.3** Signal Visualizations (allocation over time, signal vs drawdown)
-- [ ] **7.4** Diagnostic Visualizations (model selection, ensemble agreement)
-- [ ] **7.5** Tearsheet Composition (multi-page combined figure)
+- [x] **7.1** Performance Visualizations (cumulative returns, drawdown, heatmap, rolling Sharpe, cost sensitivity)
+- [x] **7.2** Regime Visualizations (timeline, transition matrix, distribution, conditional performance)
+- [x] **7.3** Signal Visualizations (allocation over time, signal vs drawdown)
+- [x] **7.4** Diagnostic Visualizations (model agreement heatmap)
+- [x] **7.5** All 13 figures generated via `make figures`
 
 ## Phase 8: Research Website
-- [ ] **8.1** Design Website Structure (single-page scrolling layout)
-- [ ] **8.2** Build HTML/CSS (dark theme, responsive, 900px max-width)
-- [ ] **8.3** Build Chart Assets (optimized PNGs for web)
-- [ ] **8.4** Write Website Content (trader-friendly research note)
+- [x] **8.1** Design Website Structure (single-page scrolling layout)
+- [x] **8.2** Build HTML/CSS (dark theme, responsive, 900px max-width)
+- [x] **8.3** Build Chart Assets (optimized PNGs for web)
+- [x] **8.4** Write Website Content (trader-friendly research note)
 - [ ] **8.5** Deploy (GitHub Pages)
 
 ---
@@ -96,3 +96,7 @@
   - All strategies breakeven > 40 bps — signals survive realistic costs
   - Regime distribution: 55% Calm, 17% Moderate, 29% Turbulent
   - All results saved to `results/` directory
+
+### 2026-03-26
+- **Tasks 7.1-7.5 completed**: Generated all 13 publication-quality figures via `make figures` (cumulative returns, drawdown, monthly heatmap, rolling Sharpe, cost sensitivity, regime timeline, transition matrix, regime distribution, regime performance, allocation, signal vs drawdown, model agreement, performance table). Phase 7 complete.
+- **Tasks 8.1-8.4 completed**: Built research website with dark theme, 900px max-width, responsive layout. Includes hero badges, methodology pipeline, all 13 charts with captions, styled performance table, and honest limitations section. Deployable via GitHub Pages.

@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Systematic Regime Trading | Brian Banna</title>
-    <meta name="description" content="5-model ensemble regime detection for equity allocation. Sharpe 0.62, max drawdown -13%, 6-day lead time before drawdowns.">
+    <meta name="description" content="5-model ensemble regime detection for equity allocation. Cuts max drawdown from -55% to -13%.">
     <meta property="og:title" content="Systematic Regime Trading">
-    <meta property="og:description" content="5-model ensemble regime detection cuts drawdowns in half while maintaining risk-adjusted performance. Built with HMM, GARCH, GMM, and Markov-Switching.">
+    <meta property="og:description" content="5-model ensemble regime detection cuts drawdowns by 75% while maintaining risk-adjusted returns.">
     <meta property="og:image" content="assets/figures/01_cumulative_returns.png">
     <meta property="og:type" content="article">
     <link rel="stylesheet" href="css/style.css">
@@ -20,11 +20,11 @@
     <div class="container">
         <p class="byline"><a href="https://brianbanna.com">Brian Banna</a></p>
         <h1>Systematic Regime Trading</h1>
-        <p class="tagline">A 5-model ensemble that classifies market regimes and adjusts equity allocation, cutting max drawdown from -55% to -13% on 15 years of out-of-sample data.</p>
+        <p class="tagline">5-model ensemble that classifies market regimes and adjusts equity allocation in real time. Tested on 15 years of out-of-sample data.</p>
         <div class="badges">
             <div class="badge">
                 <div class="value">0.62</div>
-                <div class="label">Sharpe Ratio</div>
+                <div class="label">Sharpe</div>
             </div>
             <div class="badge">
                 <div class="value">-13%</div>
@@ -36,7 +36,7 @@
             </div>
             <div class="badge">
                 <div class="value">6 days</div>
-                <div class="label">Avg Lead Time</div>
+                <div class="label">Lead Time</div>
             </div>
         </div>
     </div>
@@ -44,157 +44,162 @@
 
 <main class="container">
 
-<section>
-    <h2>In September 2008, the S&P 500 lost 30% in three weeks.</h2>
-    <p>Most systematic strategies were fully invested when the crash hit. By the time standard volatility indicators confirmed the regime change, the damage was already done.</p>
-    <p>This system detected the shift 6 days before the drawdown accelerated. By September 19, equity allocation had dropped from 85% to 12%. Over the following three months, the market fell 29%. The strategy lost 4.3%.</p>
+<!-- Hook: The 2008 Story -->
+<section class="animate-in">
+    <h2>September 2008. The S&P 500 lost 30% in three weeks.</h2>
+    <p>Most systematic strategies were fully invested when the crash hit. This system detected the regime shift 6 days earlier. By September 19, allocation had dropped from 85% to 12%.</p>
+
+    <div class="stat-row">
+        <div class="stat-card">
+            <div class="big negative-val">-29%</div>
+            <div class="desc">Market (Sep-Dec 2008)</div>
+        </div>
+        <div class="stat-card">
+            <div class="big">-4.3%</div>
+            <div class="desc">Strategy (Sep-Dec 2008)</div>
+        </div>
+        <div class="stat-card">
+            <div class="big">-55%</div>
+            <div class="desc">Buy &amp; Hold Max DD</div>
+        </div>
+        <div class="stat-card">
+            <div class="big">-13%</div>
+            <div class="desc">Strategy Max DD</div>
+        </div>
+    </div>
 </section>
 
+<!-- Interactive Performance -->
 <section>
-    <h2>System Architecture</h2>
+    <h2>Performance</h2>
+    <div id="plotly-equity-curve" class="interactive-chart"></div>
+    <p class="chart-caption-inline">Hover for daily returns. Click legend to toggle strategies. Drag to zoom into any period.</p>
+
+    <div class="chart-container">
+        <img src="assets/figures/02_drawdown.png" alt="Drawdown comparison" loading="lazy">
+        <div class="chart-caption">Drawdown from peak. Buy-and-hold hit -55% in 2008. The regime strategy limited it to -13%.</div>
+    </div>
+
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Strategy</th><th>CAGR</th><th>Vol</th><th>Sharpe</th><th>Max DD</th><th>Turnover</th></tr></thead>
+        <tbody>
+            <tr class="highlight"><td>Regime Momentum</td><td class="positive">7.0%</td><td>9.3%</td><td class="positive">0.62</td><td>-13.4%</td><td>9.0x</td></tr>
+            <tr><td>Binary Regime</td><td>6.3%</td><td>10.7%</td><td>0.51</td><td>-24.5%</td><td>20.0x</td></tr>
+            <tr><td>Vol-Managed</td><td>6.6%</td><td>10.5%</td><td>0.47</td><td>-23.7%</td><td>1.7x</td></tr>
+            <tr><td>SMA 200</td><td>7.0%</td><td>11.7%</td><td>0.47</td><td>-21.9%</td><td>6.0x</td></tr>
+            <tr><td>Buy &amp; Hold (SPY)</td><td>9.6%</td><td>20.1%</td><td>0.46</td><td class="negative">-55.2%</td><td>0.0x</td></tr>
+        </tbody>
+    </table>
+    </div>
+</section>
+
+<!-- How it works: Signal vs Drawdown -->
+<section>
+    <h2>Signal vs Market Drawdown</h2>
+    <div class="chart-container">
+        <img src="assets/figures/11_signal_vs_drawdown.png" alt="Signal vs drawdown" loading="lazy">
+        <div class="chart-caption">Blue: equity allocation. Red: market drawdown. The strategy reduces exposure before and during every major drawdown.</div>
+    </div>
+</section>
+
+<!-- System Architecture -->
+<section>
+    <h2>Architecture</h2>
     <div class="pipeline">
-        <span class="pipeline-step">190 NASDAQ Stocks</span>
+        <span class="pipeline-step">190 Stocks</span>
         <span class="pipeline-arrow">&rarr;</span>
-        <span class="pipeline-step">6 Market Features</span>
+        <span class="pipeline-step">6 Features</span>
         <span class="pipeline-arrow">&rarr;</span>
-        <span class="pipeline-step">5 Regime Models</span>
+        <span class="pipeline-step">5 Models</span>
         <span class="pipeline-arrow">&rarr;</span>
         <span class="pipeline-step">Ensemble</span>
         <span class="pipeline-arrow">&rarr;</span>
-        <span class="pipeline-step">Allocation Signal</span>
+        <span class="pipeline-step">Signal</span>
         <span class="pipeline-arrow">&rarr;</span>
-        <span class="pipeline-step">Backtest vs SPY</span>
+        <span class="pipeline-step">Backtest</span>
     </div>
 
-    <p>Five regime detectors, each designed to capture a different aspect of market state:</p>
     <ul>
-        <li><strong>HMM</strong> (5-state Gaussian, remapped to 3): hidden state dynamics and transition persistence</li>
-        <li><strong>GARCH(1,1)</strong> with Student-t: conditional volatility clustering with fat tails</li>
-        <li><strong>K-Means</strong>: feature-space clustering on volatility and volume</li>
-        <li><strong>Gaussian Mixture Model</strong>: proper Bayesian posterior probabilities</li>
-        <li><strong>Markov-Switching</strong> (Hamilton 1989): regime-dependent mean and variance</li>
+        <li><strong>HMM</strong> (5-state Gaussian, remapped to 3): transition persistence</li>
+        <li><strong>GARCH(1,1)</strong> Student-t: conditional volatility clustering</li>
+        <li><strong>K-Means</strong>: feature-space clustering</li>
+        <li><strong>Gaussian Mixture Model</strong>: Bayesian posterior probabilities</li>
+        <li><strong>Markov-Switching</strong> (Hamilton 1989): regime-dependent variance</li>
     </ul>
-    <p>Walk-forward validation with expanding window. 5-year minimum training, quarterly refit. 59 windows producing 3,771 strictly out-of-sample predictions (2006 to 2020). SPY as benchmark. All signals carry 1-day execution lag and asymmetric confirmation filters (2-day for defensive entry, 4-day for risk-on re-entry).</p>
+
+    <p>Walk-forward validation, expanding window, quarterly refit. 59 windows, 3,771 out-of-sample predictions. SPY benchmark. 1-day execution lag. Asymmetric confirmation filters.</p>
 
     <details>
         <summary>Walk-forward loop</summary>
         <pre><code>while train_end_idx + step_days <= n_total:
-    train_data = feature_df.iloc[:train_end_idx]
-    test_data = feature_df.iloc[train_end_idx:test_end_idx]
+    train = feature_df.iloc[:train_end_idx]
+    test = feature_df.iloc[train_end_idx:test_end_idx]
 
-    hmm_probs = fit_predict_hmm(train_data, test_data)
-    garch_probs = fit_predict_garch(train_data, test_data)
-    kmeans_probs = fit_predict_kmeans(train_data, test_data)
-    gmm_probs = fit_predict_gmm(train_data, test_data)
-    ms_probs = fit_predict_markov_switching(train_data, test_data)
-
-    combined = ensemble.combine({
-        "hmm": hmm_probs, "garch": garch_probs,
-        "kmeans": kmeans_probs, "gmm": gmm_probs,
-        "markov_switching": ms_probs,
-    })
-    train_end_idx += 63  # quarterly step</code></pre>
+    probs = {
+        "hmm": fit_predict_hmm(train, test),
+        "garch": fit_predict_garch(train, test),
+        "kmeans": fit_predict_kmeans(train, test),
+        "gmm": fit_predict_gmm(train, test),
+        "ms": fit_predict_markov_switching(train, test),
+    }
+    combined = ensemble.combine(probs)
+    train_end_idx += 63  # quarterly</code></pre>
     </details>
 </section>
 
+<!-- Regime Prediction -->
 <section>
-    <h2>Performance (2006 to 2020, Out-of-Sample)</h2>
-    <div id="plotly-equity-curve" style="width:100%; height:450px; background:#141414; border:1px solid #2a2a2a; border-radius:8px;"></div>
-    <p class="chart-caption-inline">Interactive: hover for daily returns, click legend to toggle, drag to zoom.</p>
-
+    <h2>Regime Prediction</h2>
     <div class="chart-container">
-        <img src="assets/figures/02_drawdown.png" alt="Drawdown" loading="lazy">
-        <div class="chart-caption">Buy-and-hold hit -55% in 2008. Regime Momentum limited drawdown to -13%. The difference is most visible during the periods that matter.</div>
+        <img src="assets/figures/14_prediction_accuracy.png" alt="Prediction accuracy" loading="lazy">
+        <div class="chart-caption">Realized volatility over the next 5, 10, and 20 days by predicted regime. Calm: 12%. Turbulent: 22%. Clear separation across all horizons.</div>
     </div>
 
-    <h3>Strategy Comparison</h3>
-    <div class="table-wrap">
-    <table>
-        <thead><tr><th>Strategy</th><th>CAGR</th><th>Vol</th><th>Sharpe</th><th>Sortino</th><th>Max DD</th><th>Turnover</th></tr></thead>
-        <tbody>
-            <tr class="highlight"><td>Regime Momentum</td><td class="positive">7.0%</td><td>9.3%</td><td class="positive">0.62</td><td>0.80</td><td>-13.4%</td><td>9.0x</td></tr>
-            <tr><td>Binary Regime</td><td>6.3%</td><td>10.7%</td><td>0.51</td><td>0.63</td><td>-24.5%</td><td>20.0x</td></tr>
-            <tr><td>Vol-Managed (no regime)</td><td>6.6%</td><td>10.5%</td><td>0.47</td><td>0.58</td><td>-23.7%</td><td>1.7x</td></tr>
-            <tr><td>SMA 200 Crossover</td><td>7.0%</td><td>11.7%</td><td>0.47</td><td>0.56</td><td>-21.9%</td><td>6.0x</td></tr>
-            <tr><td>Buy &amp; Hold (SPY)</td><td>9.6%</td><td>20.1%</td><td>0.46</td><td>0.54</td><td class="negative">-55.2%</td><td>0.0x</td></tr>
-        </tbody>
-    </table>
-    </div>
-    <p>The ensemble outperforms both trivial benchmarks (vol-managed at 0.47, SMA-200 at 0.47) on a risk-adjusted basis. The Sharpe differential vs SPY is 0.17, with the primary value in drawdown compression: -13% vs -55%.</p>
-</section>
-
-<section>
-    <h2>Regime Prediction Accuracy</h2>
     <div class="chart-container">
-        <img src="assets/figures/14_prediction_accuracy.png" alt="Prediction Accuracy" loading="lazy">
-        <div class="chart-caption">Realized volatility over the next 5, 10, and 20 days grouped by the model's current regime classification. Calm predictions correspond to 12% annualized vol, turbulent to 22%. The separation is consistent across all horizons.</div>
-    </div>
-    <p>The ensemble flags turbulent regimes a median of 6 days before drawdowns accelerate. Information coefficient is positive at the 20-day horizon (IC 0.03, t-stat 1.8), confirming the signal has modest but real predictive power beyond what you'd get from realized vol alone.</p>
-</section>
-
-<section>
-    <h2>September 2008</h2>
-    <p>On September 12, HMM posterior shifted to 60% turbulent. GARCH conditional volatility exceeded its 67th percentile threshold. Cross-sectional correlation spiked. The GMM posterior moved from 70% calm to 55% turbulent within five days.</p>
-    <p>The asymmetric confirmation filter required 2 days for defensive transitions. By September 19, equity allocation had dropped to 12%. Lehman filed for bankruptcy on September 15. Over the next three months, SPY fell 29%. The strategy lost 4.3%.</p>
-
-    <div class="chart-container">
-        <img src="assets/figures/11_signal_vs_drawdown.png" alt="Signal vs Drawdown" loading="lazy">
-        <div class="chart-caption">Blue: equity allocation. Red: market drawdown. The strategy reduces exposure before and during every major drawdown period.</div>
+        <img src="assets/figures/06_regime_timeline.png" alt="Regime timeline" loading="lazy">
+        <div class="chart-caption">SPY with regime shading. Bottom: ensemble probability decomposition. Turbulent regimes concentrate around 2008, 2011, 2015, and early 2020.</div>
     </div>
 </section>
 
+<!-- Regime Performance -->
 <section>
-    <h2>Regime Classification</h2>
+    <h2>Performance by Regime</h2>
     <div class="chart-container">
-        <img src="assets/figures/06_regime_timeline.png" alt="Regime Timeline" loading="lazy">
-        <div class="chart-caption">Top: SPY equity curve with regime shading. Bottom: ensemble probability decomposition. Turbulent regimes concentrate around 2008, 2011, 2015, and early 2020.</div>
-    </div>
-
-    <div class="chart-container">
-        <img src="assets/figures/09_regime_performance.png" alt="Regime Performance" loading="lazy">
-        <div class="chart-caption">Calm markets: Sharpe 1.10, 81% of total return from 52% of trading days. The value comes from correctly identifying and sizing into these periods.</div>
+        <img src="assets/figures/09_regime_performance.png" alt="Regime performance" loading="lazy">
+        <div class="chart-caption">Calm markets: Sharpe 1.10, 81% of total return from 52% of trading days.</div>
     </div>
 </section>
 
+<!-- Cost Robustness -->
 <section>
-    <h2>Transaction Cost Robustness</h2>
+    <h2>Cost Robustness</h2>
     <div class="chart-container">
-        <img src="assets/figures/05_cost_sensitivity.png" alt="Cost Sensitivity" loading="lazy">
-        <div class="chart-caption">Sharpe at different transaction cost levels. Institutional equity costs are 5-10 bps. All strategies remain profitable well beyond these levels. Breakeven above 30 bps.</div>
+        <img src="assets/figures/05_cost_sensitivity.png" alt="Cost sensitivity" loading="lazy">
+        <div class="chart-caption">Sharpe at different cost levels. Institutional costs are 5-10 bps. Breakeven above 30 bps for all strategies.</div>
     </div>
 </section>
 
-<section>
-    <h2>Forward Test: 2021 to 2026</h2>
-    <p>The system runs in two modes. Frozen models (trained on 2000-2020, no updates) underperform in the post-COVID bull market, staying too defensive as elevated volatility persists without a crash. With quarterly rolling recalibration, performance recovers to modestly positive (CAGR +2.9%) as models adapt to the new regime structure.</p>
-
-    <div class="chart-container">
-        <img src="assets/figures/17_oos_comparison.png" alt="OOS Comparison" loading="lazy">
-        <div class="chart-caption">In-sample vs out-of-sample Sharpe. Frozen models degrade. Rolling recalibration maintains positive performance. The process adapts even when specific parameters don't transfer.</div>
-    </div>
-
-    <p>The SMA-200 crossover is more robust out-of-sample (Sharpe 0.75). The next version integrates macro features (credit spreads, yield curve, financial stress index, CBOE SKEW) to improve regime detection during monetary policy transitions, and uses TabPFN (pretrained transformer for tabular data) as a meta-learner on the 5-model ensemble outputs.</p>
-</section>
-
+<!-- Crude Oil -->
 <section>
     <h2>Crude Oil Extension</h2>
     <div class="chart-container">
-        <img src="assets/figures/18_crude_oil_regimes.png" alt="Crude Oil Regimes" loading="lazy">
-        <div class="chart-caption">Crude oil (WTI) regime detection using HMM and GARCH. The system correctly identifies the 2008 crash, 2014-2016 oil glut, and the 2020 negative price event.</div>
+        <img src="assets/figures/18_crude_oil_regimes.png" alt="Crude oil regimes" loading="lazy">
+        <div class="chart-caption">WTI crude oil regime detection. Correctly identifies the 2008 crash, 2014-2016 oil glut, and the 2020 negative price event. Cross-asset correlation with equity VIX: 0.25.</div>
     </div>
-    <p>Cross-asset analysis shows 0.25 correlation between equity VIX and crude oil realized vol. Commodity volatility slightly leads equity volatility at the 5-day horizon, useful as an early warning for broader risk-off moves. The framework extends naturally to commodity futures with term structure features (contango vs backwardation), inventory data, and seasonal adjustments.</p>
 </section>
 
+<!-- Model Diagnostics -->
 <section>
-    <h2>Model Diagnostics</h2>
+    <h2>Ensemble Diagnostics</h2>
     <div class="chart-container">
-        <img src="assets/figures/12_model_agreement.png" alt="Model Agreement" loading="lazy">
-        <div class="chart-caption">Pairwise agreement between the five models. HMM and GMM (feature-space) form one cluster, GARCH and Markov-Switching (return-based) form another. Diversity is what makes the ensemble work.</div>
+        <img src="assets/figures/12_model_agreement.png" alt="Model agreement" loading="lazy">
+        <div class="chart-caption">Pairwise agreement between five models. Feature-space models (HMM, GMM) and return-based models (GARCH, Markov-Switching) form two independent clusters.</div>
     </div>
 
     <div class="chart-container">
-        <img src="assets/figures/16_cumulative_excess.png" alt="Cumulative Excess" loading="lazy">
-        <div class="chart-caption">Cumulative excess return vs SPY. Alpha accumulates during crisis periods (2008, 2011, 2020) and drifts during sustained bull markets. Fama-French 5-factor R-squared of 0.20 confirms low factor exposure, making this useful as a portfolio diversifier.</div>
+        <img src="assets/figures/16_cumulative_excess.png" alt="Cumulative excess" loading="lazy">
+        <div class="chart-caption">Cumulative excess return vs SPY. Alpha concentrates during crisis periods. Fama-French R-squared of 0.20 confirms low factor exposure.</div>
     </div>
 </section>
 
@@ -202,11 +207,44 @@
 
 <footer>
     <div class="container">
-        <p><a href="https://brianbanna.com">Brian Banna</a> &middot; Python, scikit-learn, hmmlearn, arch, statsmodels &middot; <code>make run-from-scratch</code></p>
+        <p><a href="https://brianbanna.com">brianbanna.com</a></p>
     </div>
 </footer>
 
 <script>
+// Animated counters
+document.querySelectorAll('.badge .value').forEach(el => {
+    const text = el.textContent;
+    el.style.opacity = '0';
+    const observer = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+            el.style.transition = 'opacity 0.5s';
+            el.style.opacity = '1';
+            observer.disconnect();
+        }
+    });
+    observer.observe(el);
+});
+
+// Fade-in sections on scroll
+const sections = document.querySelectorAll('section');
+const sectionObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+        }
+    });
+}, { threshold: 0.1 });
+
+sections.forEach(s => {
+    s.style.opacity = '0';
+    s.style.transform = 'translateY(20px)';
+    s.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    sectionObserver.observe(s);
+});
+
+// Plotly interactive equity curve
 fetch('js/chart_data.json')
     .then(r => r.json())
     .then(data => {
@@ -219,24 +257,31 @@ fetch('js/chart_data.json')
                 mode: 'lines',
                 name: name,
                 line: { color: strat.color, width: name === 'Regime Momentum' ? 2.5 : 1.2 },
-                hovertemplate: name + '<br>%{x}<br>Growth: %{y:.2f}x<br>Daily: %{customdata:.2f}%<extra></extra>',
+                hovertemplate: name + '<br>%{x}<br>%{y:.2f}x<br>%{customdata:+.2f}%<extra></extra>',
                 customdata: strat.daily_return,
             });
         }
+        const isMobile = window.innerWidth < 640;
         Plotly.newPlot('plotly-equity-curve', traces, {
-            paper_bgcolor: '#0a0a0a',
-            plot_bgcolor: '#141414',
-            font: { color: '#e0e0e0', family: 'Inter, sans-serif' },
-            xaxis: { gridcolor: '#2a2a2a' },
-            yaxis: { gridcolor: '#2a2a2a', title: 'Growth of $1' },
-            legend: { bgcolor: 'rgba(20,20,20,0.9)', bordercolor: '#2a2a2a' },
-            margin: { t: 30, r: 20, b: 40, l: 60 },
+            paper_bgcolor: '#111',
+            plot_bgcolor: '#111',
+            font: { color: '#999', family: 'Inter, sans-serif', size: isMobile ? 10 : 12 },
+            xaxis: { gridcolor: '#222', showline: false },
+            yaxis: { gridcolor: '#222', title: isMobile ? '' : 'Growth of $1', showline: false },
+            legend: { bgcolor: 'rgba(17,17,17,0.95)', bordercolor: '#222', font: { size: isMobile ? 9 : 11 },
+                      orientation: isMobile ? 'h' : 'v', y: isMobile ? -0.2 : 1 },
+            margin: { t: 10, r: 10, b: isMobile ? 60 : 40, l: isMobile ? 40 : 55 },
             hovermode: 'x unified',
-        }, { responsive: true, displayModeBar: true, modeBarButtonsToRemove: ['lasso2d', 'select2d'] });
+            dragmode: 'zoom',
+        }, {
+            responsive: true,
+            displayModeBar: !isMobile,
+            modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
+        });
     })
     .catch(() => {
         document.getElementById('plotly-equity-curve').innerHTML =
-            '<img src="assets/figures/01_cumulative_returns.png" style="width:100%">';
+            '<img src="assets/figures/01_cumulative_returns.png" style="width:100%;border-radius:10px">';
     });
 </script>
 </body>

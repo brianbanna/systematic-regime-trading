@@ -56,15 +56,42 @@ STRATEGY_LABELS = {
 DPI = 300
 
 
+STRATEGY_COLORS["sma_200"] = "#fff176"
+STRATEGY_COLORS["vix_20"] = "#ef9a9a"
+STRATEGY_COLORS["vol_managed"] = "#b0bec5"
+STRATEGY_COLORS["regime_vol_targeted"] = "#80deea"
+
+STRATEGY_LABELS["sma_200"] = "SMA 200"
+STRATEGY_LABELS["vix_20"] = "VIX > 20"
+STRATEGY_LABELS["vol_managed"] = "Vol-Managed"
+STRATEGY_LABELS["regime_vol_targeted"] = "Regime Vol-Target"
+
+# Dark theme colors
+BG_COLOR = "#0a0a0a"
+FG_COLOR = "#e0e0e0"
+GRID_COLOR = "#2a2a2a"
+ACCENT = "#4fc3f7"
+
+
 def setup():
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    plt.style.use("seaborn-v0_8-whitegrid")
     plt.rcParams.update({
-        "figure.facecolor": "white",
-        "axes.facecolor": "white",
+        "figure.facecolor": BG_COLOR,
+        "axes.facecolor": "#141414",
+        "text.color": FG_COLOR,
+        "axes.labelcolor": FG_COLOR,
+        "xtick.color": FG_COLOR,
+        "ytick.color": FG_COLOR,
+        "axes.edgecolor": GRID_COLOR,
+        "grid.color": GRID_COLOR,
+        "grid.alpha": 0.3,
         "font.size": 11,
         "axes.titlesize": 14,
         "axes.labelsize": 12,
+        "legend.facecolor": "#1a1a1a",
+        "legend.edgecolor": GRID_COLOR,
+        "legend.labelcolor": FG_COLOR,
+        "savefig.facecolor": BG_COLOR,
     })
 
 
@@ -491,8 +518,11 @@ def chart_model_agreement(results):
     logger.info("Chart 12: Model agreement")
     pred = results["predictions"]
 
-    models = ["hmm_label", "garch_label", "kmeans_label"]
-    model_names = ["HMM", "GARCH", "KMeans"]
+    # Include all available models
+    all_models = [("hmm_label", "HMM"), ("garch_label", "GARCH"), ("kmeans_label", "KMeans"),
+                  ("gmm_label", "GMM"), ("ms_label", "Markov-Sw")]
+    models = [m for m, _ in all_models if m in pred.columns]
+    model_names = [n for m, n in all_models if m in pred.columns]
 
     # Pairwise agreement
     n = len(models)
@@ -590,12 +620,259 @@ def _add_regime_shading(ax, predictions):
 
 
 # =========================================================================
+# Chart 14: Prediction Accuracy
+# =========================================================================
+def chart_prediction_accuracy(results):
+    logger.info("Chart 14: Prediction accuracy")
+    try:
+        pred_acc = pd.read_csv(RESULTS_DIR / "prediction_accuracy.csv")
+    except FileNotFoundError:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    horizons = pred_acc["horizon_days"].unique()
+
+    x = np.arange(3)
+    width = 0.25
+    for i, h in enumerate(horizons):
+        hdf = pred_acc[pred_acc["horizon_days"] == h].sort_values("regime_id")
+        bars = ax.bar(x + i * width, hdf["mean_realized_vol"].values * 100,
+                      width, label=f"{h}d horizon", alpha=0.8)
+
+    ax.set_xticks(x + width)
+    ax.set_xticklabels(["Calm", "Moderate", "Turbulent"])
+    ax.set_ylabel("Realized Volatility (%)")
+    ax.set_title("Does the model predict future volatility correctly?")
+    ax.legend()
+
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "14_prediction_accuracy.png", dpi=DPI, bbox_inches="tight")
+    plt.close(fig)
+
+
+# =========================================================================
+# Chart 15: Signal Decay (IC by horizon)
+# =========================================================================
+def chart_signal_decay(results):
+    logger.info("Chart 15: Signal decay")
+    try:
+        ic_df = pd.read_csv(RESULTS_DIR / "signal_decay.csv")
+    except FileNotFoundError:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.bar(ic_df["horizon_days"].astype(str), ic_df["ic"], color=ACCENT, alpha=0.8)
+    ax.axhline(y=0, color=FG_COLOR, linewidth=0.5)
+    ax.set_xlabel("Forward Horizon (days)")
+    ax.set_ylabel("Information Coefficient (Spearman)")
+    ax.set_title("Signal Decay: How quickly does regime information lose value?")
+
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "15_signal_decay.png", dpi=DPI, bbox_inches="tight")
+    plt.close(fig)
+
+
+# =========================================================================
+# Chart 16: Cumulative Excess Return
+# =========================================================================
+def chart_cumulative_excess(results):
+    logger.info("Chart 16: Cumulative excess return")
+    backtest = results["backtest"]
+
+    if "regime_momentum" not in backtest or "buy_and_hold" not in backtest:
+        return
+
+    bt_strat = backtest["regime_momentum"]
+    bt_bench = backtest["buy_and_hold"]
+    common = bt_strat.index.intersection(bt_bench.index)
+
+    excess = bt_strat.loc[common, "net_return"] - bt_bench.loc[common, "net_return"]
+    cum_excess = excess.cumsum()
+
+    fig, ax = plt.subplots(figsize=(14, 5))
+    ax.plot(cum_excess.index, cum_excess * 100, color=ACCENT, linewidth=1.5)
+    ax.fill_between(cum_excess.index, cum_excess * 100, 0,
+                    where=cum_excess >= 0, color=ACCENT, alpha=0.15)
+    ax.fill_between(cum_excess.index, cum_excess * 100, 0,
+                    where=cum_excess < 0, color="#e74c3c", alpha=0.15)
+    ax.axhline(y=0, color=FG_COLOR, linewidth=0.5)
+    ax.set_ylabel("Cumulative Excess Return (%)")
+    ax.set_title("Regime Momentum vs Buy-and-Hold: Cumulative Excess Return")
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "16_cumulative_excess.png", dpi=DPI, bbox_inches="tight")
+    plt.close(fig)
+
+
+# =========================================================================
+# Chart 17: OOS Extension Comparison
+# =========================================================================
+def chart_oos_comparison(results):
+    logger.info("Chart 17: OOS 2021-2026 comparison")
+    oos_dir = RESULTS_DIR / "oos_extension"
+    if not oos_dir.exists():
+        return
+
+    try:
+        oos_table = pd.read_csv(oos_dir / "oos_performance_table.csv", index_col=0)
+    except FileNotFoundError:
+        return
+
+    # In-sample vs OOS Sharpe comparison
+    is_table = results["perf_table"]
+
+    strategies = ["regime_momentum", "buy_and_hold", "sma_200", "vol_managed"]
+    is_sharpes = [is_table.loc[s, "Sharpe"] if s in is_table.index else 0 for s in strategies]
+    oos_sharpes = [oos_table.loc[s, "Sharpe"] if s in oos_table.index else 0 for s in strategies]
+
+    labels = [STRATEGY_LABELS.get(s, s) for s in strategies]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    x = np.arange(len(strategies))
+    width = 0.35
+
+    ax.bar(x - width/2, is_sharpes, width, label="In-Sample (2006-2020)", color=ACCENT, alpha=0.8)
+    ax.bar(x + width/2, oos_sharpes, width, label="Out-of-Sample (2021-2026)", color="#e74c3c", alpha=0.8)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=15)
+    ax.set_ylabel("Sharpe Ratio")
+    ax.set_title("In-Sample vs Out-of-Sample Performance")
+    ax.axhline(y=0, color=FG_COLOR, linewidth=0.5)
+    ax.legend()
+
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "17_oos_comparison.png", dpi=DPI, bbox_inches="tight")
+    plt.close(fig)
+
+
+# =========================================================================
+# Chart 18: Crude Oil Regimes
+# =========================================================================
+def chart_crude_oil_regimes(results):
+    logger.info("Chart 18: Crude oil regimes")
+    comm_dir = RESULTS_DIR / "commodities"
+    if not comm_dir.exists():
+        return
+
+    try:
+        cl_pred = pd.read_parquet(comm_dir / "crude_oil_regimes.parquet")
+    except FileNotFoundError:
+        return
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 8), height_ratios=[2, 1], sharex=True)
+
+    dates = pd.to_datetime(cl_pred["Date"])
+
+    # Top: Price with regime shading
+    ax1.plot(dates, cl_pred["close_price"], color=FG_COLOR, linewidth=0.8)
+    labels = cl_pred["regime_label"].values
+    prev = labels[0]
+    start = dates.iloc[0]
+    for i in range(1, len(labels)):
+        if labels[i] != prev or i == len(labels) - 1:
+            color = REGIME_COLORS.get(int(prev), "gray")
+            ax1.axvspan(start, dates.iloc[i], alpha=0.15, color=color)
+            start = dates.iloc[i]
+            prev = labels[i]
+    ax1.set_ylabel("WTI Crude Oil ($)")
+    ax1.set_title("Crude Oil Regime Detection")
+
+    # Bottom: Stacked regime probabilities
+    ax2.fill_between(dates, 0, cl_pred["prob_calm"],
+                     color=REGIME_COLORS[0], alpha=0.7, label="Calm")
+    ax2.fill_between(dates, cl_pred["prob_calm"],
+                     cl_pred["prob_calm"] + cl_pred["prob_moderate"],
+                     color=REGIME_COLORS[1], alpha=0.7, label="Moderate")
+    ax2.fill_between(dates, cl_pred["prob_calm"] + cl_pred["prob_moderate"], 1,
+                     color=REGIME_COLORS[2], alpha=0.7, label="Turbulent")
+    ax2.set_ylabel("Probability")
+    ax2.set_ylim(0, 1)
+    ax2.legend(loc="upper right", ncol=3)
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "18_crude_oil_regimes.png", dpi=DPI, bbox_inches="tight")
+    plt.close(fig)
+
+
+# =========================================================================
+# Plotly Interactive Export
+# =========================================================================
+def export_plotly_data(results):
+    """Export equity curve data as JSON for interactive Plotly chart on website."""
+    logger.info("Exporting Plotly interactive data...")
+    import json
+
+    backtest = results["backtest"]
+    predictions = results["predictions"]
+
+    chart_data = {"strategies": {}}
+
+    for name in ["regime_momentum", "buy_and_hold", "sma_200", "vol_managed"]:
+        if name not in backtest:
+            continue
+        bt = backtest[name]
+        chart_data["strategies"][STRATEGY_LABELS.get(name, name)] = {
+            "dates": [d.strftime("%Y-%m-%d") for d in bt.index],
+            "cumulative_return": bt["cumulative_return"].round(4).tolist(),
+            "daily_return": (bt["net_return"] * 100).round(2).tolist(),
+            "position": bt["position"].round(2).tolist(),
+            "color": STRATEGY_COLORS.get(name, "#888"),
+        }
+
+    # Regime data for hover
+    pred_dates = [d.strftime("%Y-%m-%d") for d in pd.to_datetime(predictions["Date"])]
+    chart_data["regimes"] = {
+        "dates": pred_dates,
+        "labels": predictions["regime_label"].tolist(),
+    }
+
+    # Cost sensitivity data
+    try:
+        cost_sens = results["cost_sens"]
+        sens_data = {}
+        for strategy in cost_sens["strategy"].unique():
+            sdf = cost_sens[cost_sens["strategy"] == strategy].sort_values("cost_bps")
+            sens_data[STRATEGY_LABELS.get(strategy, strategy)] = {
+                "cost_bps": sdf["cost_bps"].tolist(),
+                "sharpe": sdf["sharpe"].round(3).tolist(),
+            }
+        chart_data["cost_sensitivity"] = sens_data
+    except Exception:
+        pass
+
+    # Performance table
+    try:
+        table = results["perf_table"]
+        chart_data["performance_table"] = {
+            "strategies": [STRATEGY_LABELS.get(s, s) for s in table.index],
+            "cagr": (table["CAGR"] * 100).round(1).tolist(),
+            "sharpe": table["Sharpe"].round(2).tolist(),
+            "max_dd": (table["Max_DD"] * 100).round(1).tolist(),
+            "turnover": table["Turnover"].round(1).tolist(),
+        }
+    except Exception:
+        pass
+
+    # Save to website/js
+    js_dir = get_path("website/js")
+    js_dir.mkdir(parents=True, exist_ok=True)
+    with open(js_dir / "chart_data.json", "w") as f:
+        json.dump(chart_data, f)
+
+    logger.info(f"Plotly data exported to {js_dir / 'chart_data.json'}")
+
+
+# =========================================================================
 # Main
 # =========================================================================
 def main():
     setup()
     results = load_results()
 
+    # Original 13 charts (now dark themed)
     chart_cumulative_returns(results)      # 1
     chart_drawdown(results)                # 2
     chart_monthly_heatmap(results)         # 3
@@ -610,7 +887,17 @@ def main():
     chart_model_agreement(results)         # 12
     chart_performance_table(results)       # 13
 
-    logger.info(f"All 13 figures saved to {FIGURES_DIR}/")
+    # New charts from Phase 5-7
+    chart_prediction_accuracy(results)     # 14
+    chart_signal_decay(results)            # 15
+    chart_cumulative_excess(results)       # 16
+    chart_oos_comparison(results)          # 17
+    chart_crude_oil_regimes(results)       # 18
+
+    # Interactive data export
+    export_plotly_data(results)
+
+    logger.info(f"All figures saved to {FIGURES_DIR}/")
 
 
 if __name__ == "__main__":

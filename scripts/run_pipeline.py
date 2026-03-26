@@ -32,7 +32,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 from systematic_regime_trading.utils.config import load_config, get_path
-from systematic_regime_trading.data.storage import load_parquet, load_parquet_subdir
+from systematic_regime_trading.data.storage import load_parquet, load_parquet_subdir, save_parquet_subdir
+from systematic_regime_trading.data.loaders import download_spy
 from systematic_regime_trading.features.volatility import (
     compute_daily_returns_unified,
     compute_market_volatility_index_unified,
@@ -52,6 +53,9 @@ from systematic_regime_trading.models.ensemble import EnsembleRegimeDetector
 from systematic_regime_trading.signals.generator import generate_all_signals
 from systematic_regime_trading.backtest.engine import run_backtest, run_all_backtests
 from systematic_regime_trading.backtest.sensitivity import cost_sensitivity, find_breakeven_cost
+from systematic_regime_trading.backtest.trivial_signals import (
+    sma_crossover_signal, vix_threshold_signal, vol_managed_signal,
+)
 from systematic_regime_trading.evaluation.metrics import compute_metrics
 from systematic_regime_trading.evaluation.report import (
     performance_table, save_performance_table, format_performance_table,
@@ -74,7 +78,7 @@ def setup_results_dirs():
 
 
 def step1_load_data():
-    """Load cleaned equity data and auxiliary data."""
+    """Load cleaned equity data, SPY benchmark, and auxiliary data."""
     logger.info("=" * 60)
     logger.info("STEP 1: Loading data")
     logger.info("=" * 60)
@@ -82,6 +86,19 @@ def step1_load_data():
     equity_data = load_parquet("equity_data")
     logger.info(f"Equity data: {len(equity_data):,} rows, "
                 f"{equity_data['ticker'].nunique()} tickers")
+
+    data_cfg = load_config("data")
+    start = data_cfg["universe"]["date_range"]["start"]
+    end = data_cfg["universe"]["date_range"]["end"]
+
+    # Load or download SPY benchmark
+    try:
+        spy_data = load_parquet_subdir("spy", "auxiliary")
+        logger.info(f"SPY: {len(spy_data):,} rows (cached)")
+    except FileNotFoundError:
+        logger.info("SPY not cached, downloading...")
+        spy_data = download_spy(start, end)
+        save_parquet_subdir(spy_data, "spy", "auxiliary")
 
     # Load auxiliary data
     try:
@@ -98,22 +115,22 @@ def step1_load_data():
         tlt_data = None
         logger.warning("TLT data not found")
 
-    return equity_data, vix_data, tlt_data
+    return equity_data, spy_data, vix_data, tlt_data
 
 
-def step2_compute_features(equity_data):
-    """Compute market-level features from raw data."""
+def step2_compute_features(equity_data, spy_data):
+    """Compute market-level features from raw data. Use SPY as market return."""
     logger.info("=" * 60)
     logger.info("STEP 2: Computing features")
     logger.info("=" * 60)
 
     features_cfg = load_config("features")
 
-    # Daily returns
+    # Daily returns for feature computation (cross-sectional indicators)
     logger.info("Computing daily returns...")
     df_ret = compute_daily_returns_unified(equity_data)
 
-    # Market indicators
+    # Market indicators (from cross-section of stocks)
     logger.info("Computing market indicators...")
     vol_df = compute_market_volatility_index_unified(df_ret).set_index("Date")
     dir_df = compute_market_direction_unified(df_ret)
@@ -130,6 +147,23 @@ def step2_compute_features(equity_data):
                         equity_data["ticker"].nunique()),
     )
 
+    # VIX term structure (contango/backwardation)
+    logger.info("Adding VIX term structure feature...")
+    try:
+        vix_data = load_parquet_subdir("vix", "auxiliary")
+        if "VIX" in vix_data.columns and "VIX3M" in vix_data.columns:
+            vix_ts = vix_data.set_index("Date")[["VIX", "VIX3M"]].copy()
+            vix_ts["vix_term_structure"] = vix_ts["VIX"] / vix_ts["VIX3M"]
+            vix_term = vix_ts[["vix_term_structure"]]
+            logger.info(f"VIX term structure: {len(vix_term)} days, "
+                        f"mean={vix_term['vix_term_structure'].mean():.3f}")
+        else:
+            vix_term = None
+            logger.warning("VIX3M not available, skipping VIX term structure")
+    except Exception:
+        vix_term = None
+        logger.warning("Could not compute VIX term structure")
+
     # Mood index (z-score standardization)
     logger.info("Computing mood index...")
     indicators_dict = {
@@ -140,19 +174,24 @@ def step2_compute_features(equity_data):
         "market_atr": atr_df,
         "market_correlation": corr_df,
     }
+    if vix_term is not None:
+        indicators_dict["vix_term_structure"] = vix_term
+
     mood_df = compute_mood_index(
         indicators_dict,
         window=corr_cfg["standardization_window"],
     )
 
-    # Equal-weight market return for backtesting
-    market_return = df_ret.groupby("Date")["simple_return"].mean()
-    market_return.name = "market_return"
+    # SPY as market return for backtesting (not equal-weight NASDAQ)
+    spy_returns = spy_data.set_index("Date")["spy_return"].dropna()
+    spy_returns.name = "market_return"
+    logger.info(f"SPY benchmark: {len(spy_returns)} days, "
+                f"annualized return={spy_returns.mean()*252:.1%}, "
+                f"vol={spy_returns.std()*np.sqrt(252):.1%}")
 
     logger.info(f"Features: {len(mood_df)} days, {mood_df.shape[1]} indicators")
-    logger.info(f"Market return: {len(market_return)} days")
 
-    return df_ret, mood_df, market_return, vol_df
+    return df_ret, mood_df, spy_returns, vol_df
 
 
 def step3_walk_forward_regimes(mood_df, market_return):
@@ -363,8 +402,8 @@ def step4_generate_signals(predictions, market_return):
     return signals, mkt_ret, regime_probs, regime_labels
 
 
-def step5_run_backtests(signals, market_return, tlt_data):
-    """Run backtests for all strategies + benchmarks."""
+def step5_run_backtests(signals, market_return, spy_data, tlt_data, vix_data):
+    """Run backtests for all strategies, trivial benchmarks, and standard benchmarks."""
     logger.info("=" * 60)
     logger.info("STEP 5: Running backtests")
     logger.info("=" * 60)
@@ -378,6 +417,36 @@ def step5_run_backtests(signals, market_return, tlt_data):
 
     config = load_config("backtest")
     results = run_all_backtests(signals, market_return, bond_returns, config)
+
+    # Trivial signal benchmarks (to prove the ensemble adds value)
+    cost_config = config["execution"]
+    constraint_config = config["constraints"]
+
+    # 200-day SMA crossover
+    logger.info("Backtesting: sma_200 (trivial)")
+    spy_prices = spy_data.set_index("Date")["Adj Close"]
+    sma_signal = sma_crossover_signal(spy_prices, window=200)
+    sma_signal = sma_signal.shift(1)  # execution lag
+    results["sma_200"] = run_backtest(
+        market_return, sma_signal, cost_config, constraint_config,
+    )
+
+    # VIX > 20 threshold
+    if vix_data is not None and "VIX" in vix_data.columns:
+        logger.info("Backtesting: vix_20 (trivial)")
+        vix_series = vix_data.set_index("Date")["VIX"]
+        vix_signal = vix_threshold_signal(vix_series, threshold=20.0)
+        vix_signal = vix_signal.shift(1)  # execution lag
+        results["vix_20"] = run_backtest(
+            market_return, vix_signal, cost_config, constraint_config,
+        )
+
+    # Vol-managed (no regime detection)
+    logger.info("Backtesting: vol_managed (trivial)")
+    vm_signal = vol_managed_signal(market_return, vol_target=0.10, lookback=63)
+    results["vol_managed"] = run_backtest(
+        market_return, vm_signal, cost_config, constraint_config,
+    )
 
     # Save individual backtest results
     for name, bt in results.items():
@@ -544,10 +613,10 @@ def main():
     setup_results_dirs()
 
     # Step 1: Load data
-    equity_data, vix_data, tlt_data = step1_load_data()
+    equity_data, spy_data, vix_data, tlt_data = step1_load_data()
 
-    # Step 2: Compute features
-    df_ret, mood_df, market_return, vol_df = step2_compute_features(equity_data)
+    # Step 2: Compute features (SPY as benchmark, not equal-weight NASDAQ)
+    df_ret, mood_df, market_return, vol_df = step2_compute_features(equity_data, spy_data)
 
     # Step 3: Walk-forward regime detection
     predictions = step3_walk_forward_regimes(mood_df, market_return)
@@ -560,7 +629,7 @@ def main():
     signals.to_parquet(RESULTS_DIR / "strategy_signals.parquet")
 
     # Step 5: Backtests
-    backtest_results = step5_run_backtests(signals, mkt_ret_aligned, tlt_data)
+    backtest_results = step5_run_backtests(signals, mkt_ret_aligned, spy_data, tlt_data, vix_data)
 
     # Step 6: Evaluate
     table = step6_evaluate(backtest_results, predictions, mkt_ret_aligned)

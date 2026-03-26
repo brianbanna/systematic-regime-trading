@@ -208,14 +208,19 @@ def step2_compute_features(equity_data, spy_data, macro_data=None):
         window=corr_cfg["standardization_window"],
     )
 
-    # Macro features stored separately (not in mood index to avoid z-score distortion)
-    # Models that use features (KMeans, GMM) access equity cross-section only.
-    # Macro data is available for downstream analysis and future model upgrades.
+    # Integrate key macro features directly into mood_df for model consumption
+    # KMeans and GMM will use these alongside equity features
     if macro_data is not None and len(macro_data) > 0:
         macro_aligned = macro_data.reindex(mood_df.index).ffill().bfill()
         macro_aligned.to_parquet(RESULTS_DIR / "macro_features_aligned.parquet")
-        logger.info(f"Macro features saved separately: {len(macro_aligned.columns)} columns, "
-                    f"{len(macro_aligned)} days")
+
+        # Add the most predictive macro features as z-scores (consistent with mood index)
+        for col in ["hy_spread_zscore", "yield_curve", "financial_stress"]:
+            if col in macro_aligned.columns:
+                mood_df[col] = macro_aligned[col]
+                logger.info(f"  Added macro feature: {col}")
+
+        logger.info(f"Features after macro integration: {mood_df.shape[1]} columns")
 
     # Save standardization parameters (mean, std) for OOS consistency
     feature_stats = mood_df.describe().loc[["mean", "std"]]
@@ -399,7 +404,7 @@ def _fit_predict_garch(train_data, test_data, market_return, garch_cfg):
 def _fit_predict_kmeans(train_data, test_data, kmeans_cfg):
     """Fit KMeans on train features, predict probabilities on test."""
     try:
-        feature_cols = ["market_volatility", "market_volume"]
+        feature_cols = ["market_volatility", "market_volume", "hy_spread_zscore", "yield_curve", "financial_stress"]
         available = [c for c in feature_cols if c in train_data.columns]
 
         if len(available) == 0:

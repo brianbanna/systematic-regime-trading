@@ -80,7 +80,16 @@ def generate_all_signals(
             )
         elif name == "regime_vol_targeted":
             rvt_cfg = strategy_config["strategies"]["regime_vol_targeted"]
-            vol_targets = {int(k): v for k, v in rvt_cfg.get("vol_targets", {}).items()}
+            raw_targets = rvt_cfg.get("vol_targets", {})
+            name_to_id = {"calm": 0, "moderate": 1, "turbulent": 2}
+            vol_targets = {}
+            for k, v in raw_targets.items():
+                key = name_to_id.get(k, k)
+                try:
+                    key = int(key)
+                except (ValueError, TypeError):
+                    pass
+                vol_targets[key] = v
             if not vol_targets:
                 vol_targets = {0: 0.12, 1: 0.08, 2: 0.04}
             smoothed = apply_regime_vol_target(

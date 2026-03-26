@@ -63,6 +63,18 @@ def regime_to_allocation(
             regime_probs, prob_cols, strategy,
         )
 
+    elif strategy_name == "regime_vol_targeted":
+        # Base allocation from binary regime, vol-targeting applied later in generator
+        alloc = strategy.get("allocation", {"calm": 1.0, "moderate": 0.5, "turbulent": 0.0})
+        if isinstance(alloc, dict):
+            allocation = (
+                p_calm * alloc.get("calm", 1.0)
+                + p_moderate * alloc.get("moderate", 0.5)
+                + p_turbulent * alloc.get("turbulent", 0.0)
+            )
+        else:
+            allocation = p_calm
+
     else:
         raise ValueError(f"Unknown strategy: {strategy_name}")
 

@@ -14,6 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
     <script src="js/chart_data_inline.js"></script>
+    <script src="js/oos_data.js"></script>
 </head>
 <body>
 
@@ -206,10 +207,10 @@
     </div>
 </section>
 
-<!-- Growth Simulator -->
+<!-- Forward Test -->
 <section>
-    <h2>Growth of $10,000</h2>
-    <p>Watch how a $10,000 investment evolves over time. The strategy grows steadily while SPY swings through booms and crashes.</p>
+    <h2>Forward Test: 2021 to 2026</h2>
+    <p>The models were trained on 2000-2020 data and recalibrated quarterly on new data as it arrived. Watch how a $10,000 investment evolves on data the system never trained on.</p>
     <div class="sim-container">
         <div id="growth-chart" class="interactive-chart"></div>
         <div class="sim-slider-row">
@@ -341,40 +342,42 @@
     }, { responsive:true, displayModeBar:!mob,
          modeBarButtonsToRemove:['lasso2d','select2d','autoScale2d'] });
 
-    // === Growth of $10,000 ===
-    var strat = D.strategies['Regime Momentum'];
-    var spy = D.strategies['Buy & Hold'];
-    if (!strat || !spy) return;
+    // === Forward Test: Growth of $10,000 (2021-2026, OOS data) ===
+    if (typeof OOS_DATA === 'undefined') return;
 
-    var dates = strat.dates;
-    var sG = strat.cumulative_return.map(function(v){return v*10000;});
-    var bG = spy.cumulative_return.map(function(v){return v*10000;});
-    var N = dates.length;
-    var yMax = 0;
-    for (var i=0;i<N;i++) { if(sG[i]>yMax) yMax=sG[i]; if(bG[i]>yMax) yMax=bG[i]; }
+    var oosStrat = OOS_DATA['Regime Strategy'];
+    var oosSpy = OOS_DATA['SPY Buy & Hold'];
+    if (!oosStrat || !oosSpy) return;
 
-    function gLayout() {
+    var oDates = oosStrat.dates;
+    var oSG = oosStrat.growth;
+    var oBG = oosSpy.growth;
+    var oN = oDates.length;
+    var oMax = 0;
+    for (var j=0;j<oN;j++) { if(oSG[j]>oMax) oMax=oSG[j]; if(oBG[j]>oMax) oMax=oBG[j]; }
+
+    function oLayout() {
         return {
             paper_bgcolor:'#111', plot_bgcolor:'#111',
             font:{color:'#999',family:'Inter,sans-serif',size:mob?10:12},
-            xaxis:{gridcolor:'#222',showline:false,range:[dates[0],dates[N-1]]},
+            xaxis:{gridcolor:'#222',showline:false,range:[oDates[0],oDates[oN-1]]},
             yaxis:{gridcolor:'#222',title:mob?'':'Portfolio Value ($)',showline:false,
-                   tickprefix:'$',tickformat:',.0f',range:[5000,yMax*1.05]},
+                   tickprefix:'$',tickformat:',.0f',range:[8000,oMax*1.08]},
             legend:{bgcolor:'rgba(17,17,17,0.95)',bordercolor:'#222',
                     orientation:'h',y:mob?-0.15:1.05,font:{size:mob?9:11}},
             margin:{t:10,r:10,b:mob?50:40,l:mob?50:65},
             hovermode:'x unified',
-            shapes:[{type:'line',x0:dates[0],x1:dates[N-1],y0:10000,y1:10000,
+            shapes:[{type:'line',x0:oDates[0],x1:oDates[oN-1],y0:10000,y1:10000,
                      line:{color:'#333',width:1,dash:'dash'}}]
         };
     }
 
-    function gTraces(len) {
+    function oTraces(len) {
         return [
-            {x:dates.slice(0,len),y:sG.slice(0,len),type:'scatter',mode:'lines',
+            {x:oDates.slice(0,len),y:oSG.slice(0,len),type:'scatter',mode:'lines',
              name:'Regime Strategy',line:{color:'#4fc3f7',width:2.5}},
-            {x:dates.slice(0,len),y:bG.slice(0,len),type:'scatter',mode:'lines',
-             name:'SPY Buy & Hold',line:{color:'#666',width:1.2,dash:'dot'}}
+            {x:oDates.slice(0,len),y:oBG.slice(0,len),type:'scatter',mode:'lines',
+             name:'SPY Buy & Hold',line:{color:'#666',width:1.5,dash:'dot'}}
         ];
     }
 
@@ -383,10 +386,11 @@
     var elGSt = document.getElementById('growth-status');
     var btnG = document.getElementById('growth-play');
 
-    Plotly.newPlot('growth-chart', gTraces(N), gLayout(), {responsive:true,displayModeBar:false});
-    elGS.textContent = '$' + Math.round(sG[N-1]).toLocaleString();
+    // Show full chart initially
+    Plotly.newPlot('growth-chart', oTraces(oN), oLayout(), {responsive:true,displayModeBar:false});
+    elGS.textContent = '$' + Math.round(oSG[oN-1]).toLocaleString();
     elGS.style.color = '#00e676';
-    elGB.textContent = '$' + Math.round(bG[N-1]).toLocaleString();
+    elGB.textContent = '$' + Math.round(oBG[oN-1]).toLocaleString();
     elGB.style.color = '#999';
 
     btnG.addEventListener('click', function() {
@@ -394,21 +398,37 @@
         btnG.textContent = 'Running...';
         elGS.textContent = '$10,000';
         elGB.textContent = '$10,000';
+        elGSt.textContent = '';
 
-        var step = Math.max(1, Math.floor(N/150));
+        // Slower: ~300 frames over ~8 seconds
+        var step = Math.max(1, Math.floor(oN / 300));
         var f = 1;
+        var lastTime = 0;
+        var frameDelay = 25; // ms between frames (slower = higher)
 
-        function tick() {
-            f = Math.min(f + step, N);
-            Plotly.react('growth-chart', gTraces(f), gLayout(), {responsive:true,displayModeBar:false});
-            var sv = sG[f-1], bv = bG[f-1];
+        function tick(timestamp) {
+            if (timestamp - lastTime < frameDelay) {
+                requestAnimationFrame(tick);
+                return;
+            }
+            lastTime = timestamp;
+
+            f = Math.min(f + step, oN);
+            Plotly.react('growth-chart', oTraces(f), oLayout(), {responsive:true,displayModeBar:false});
+
+            var sv = oSG[f-1], bv = oBG[f-1];
             elGS.textContent = '$' + Math.round(sv).toLocaleString();
             elGB.textContent = '$' + Math.round(bv).toLocaleString();
             elGS.style.color = sv >= bv ? '#00e676' : '#4fc3f7';
             elGB.style.color = bv > sv ? '#00e676' : '#999';
-            elGSt.textContent = dates[f-1];
-            if (f < N) { requestAnimationFrame(tick); }
-            else { btnG.disabled = false; btnG.textContent = 'Replay'; }
+            elGSt.textContent = oDates[f-1];
+
+            if (f < oN) {
+                requestAnimationFrame(tick);
+            } else {
+                btnG.disabled = false;
+                btnG.textContent = 'Replay';
+            }
         }
         requestAnimationFrame(tick);
     });

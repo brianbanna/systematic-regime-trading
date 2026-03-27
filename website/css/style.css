@@ -251,6 +251,106 @@ code { font-family: 'SF Mono', 'Fira Code', monospace; color: var(--text); }
 .stat-card .big.negative-val { color: var(--red); }
 .stat-card .desc { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
 
+/* ---- SIMULATION ---- */
+.sim-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.sim-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.sim-slider-row label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.sim-slider-row input[type="range"] {
+    flex: 1;
+    min-width: 120px;
+    height: 6px;
+    -webkit-appearance: none;
+    background: var(--border);
+    border-radius: 3px;
+    outline: none;
+}
+
+.sim-slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.sim-value {
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 50px;
+    font-size: 0.9rem;
+}
+
+/* Crisis replay */
+.crisis-replay {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.crisis-timeline {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    line-height: 1.8;
+    color: var(--text-muted);
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+
+.crisis-timeline .day {
+    display: flex;
+    gap: 8px;
+    padding: 3px 0;
+    border-bottom: 1px solid #1a1a1a;
+    flex-wrap: wrap;
+}
+
+.crisis-timeline .day .date { color: var(--text-muted); min-width: 80px; }
+.crisis-timeline .day .regime-calm { color: var(--green); }
+.crisis-timeline .day .regime-turbulent { color: var(--red); }
+.crisis-timeline .day .regime-moderate { color: var(--amber); }
+.crisis-timeline .day .alloc { color: var(--accent); }
+.crisis-timeline .day .ret-pos { color: var(--green); }
+.crisis-timeline .day .ret-neg { color: var(--red); }
+
+.sim-button {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.sim-button:hover { opacity: 0.85; }
+.sim-button:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ---- FOOTER ---- */
 footer {
     padding: 30px 0;

@@ -1,190 +1,92 @@
-# Market Regime Modeling for Systematic Trading
+# Systematic Regime Trading
 
-Detect market regimes. Generate allocation signals. Backtest with realistic costs.
+A 5-model ensemble that detects market regimes and adjusts equity allocation. Beats SPY on both absolute return (10.2% vs 9.6% CAGR) and risk-adjusted basis (Sharpe 0.70 vs 0.46) while cutting max drawdown from -55% to -28%.
 
-A config-driven framework that combines Hidden Markov Models, GARCH volatility, and K-Means clustering into an ensemble regime detector, then translates regime probabilities into systematic equity allocation strategies evaluated via walk-forward backtesting.
+**[View the research site](https://brianbanna.com/systematic-regime-trading)**
 
-<!--
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)]()
--->
+## Results
 
-## Overview
+| Strategy | CAGR | Sharpe | Max DD | Turnover |
+|----------|------|--------|--------|----------|
+| **Regime Momentum** | **10.2%** | **0.70** | **-28%** | 5.7x |
+| Vol-Managed (baseline) | 6.6% | 0.47 | -24% | 1.7x |
+| SMA-200 (baseline) | 7.0% | 0.47 | -22% | 6.0x |
+| Buy & Hold (SPY) | 9.6% | 0.46 | -55% | 0.0x |
 
-Markets cycle between calm and turbulent states. This framework identifies those states in real time and trades accordingly: aggressive when conditions are favorable, defensive when they deteriorate.
+Benchmarked against SPY. Walk-forward validation, 2006-2020 out-of-sample. All returns net of 7 bps transaction costs.
 
-**What it does:**
+Out-of-sample extension (2021-2026, rolling quarterly recalibration): Sharpe 0.44, CAGR 7.6%.
 
-- Fits three independent regime models on daily US equity data (2000-2020)
-- Combines them into a probability-weighted ensemble
-- Maps regime probabilities to portfolio allocation targets
-- Runs vectorized backtests with transaction costs, slippage, and execution lag
-- Evaluates performance with bootstrap significance testing
+## How it works
 
-**What it produces:**
+190 NASDAQ stocks produce six cross-sectional features (volatility, breadth, direction, correlation, ATR, volume) plus macro features (high-yield credit spread, yield curve slope, financial stress index). Five regime models classify each trading day:
 
-- Out-of-sample regime predictions (walk-forward, no lookahead)
-- Net-of-cost strategy returns for multiple allocation variants
-- Full performance tearsheet (Sharpe, drawdown, rolling metrics, cost sensitivity)
-- Static research website with key charts
+| Model | Input | What it captures |
+|-------|-------|-----------------|
+| HMM (5-state Gaussian) | Market volatility | Hidden state transitions, regime persistence |
+| GARCH(1,1) Student-t | SPY returns | Conditional volatility clustering, fat tails |
+| K-Means | Vol + volume + macro | Feature-space regime clustering |
+| Gaussian Mixture Model | Vol + volume + macro | Bayesian posterior probabilities |
+| Markov-Switching (Hamilton 1989) | SPY returns | Regime-dependent mean and variance |
 
-## Research Pipeline
+The ensemble combines probabilities (not hard labels) with fixed weights. Regime predictions feed an allocation signal with asymmetric confirmation filters, rate limiting, and 1-day execution lag.
 
-```
-                    Market Data
-                        |
-                Feature Engineering
-          (6 cross-sectional indicators + PCA)
-                        |
-                 Regime Detection
-            (HMM | GARCH | K-Means)
-                        |
-             Ensemble Probabilities
-          (performance-weighted voting)
-                        |
-              Signal Construction
-         (filters, vol targeting, lag)
-                        |
-             Portfolio Allocation
-           (4 strategy variants)
-                        |
-            Walk-Forward Backtest
-          (transaction costs, slippage)
-                        |
-           Performance Evaluation
-       (Sharpe, drawdown, significance)
-```
+## Key findings
 
-## Models
+- The 5-model ensemble detects turbulent regimes a median of **6 days before drawdowns** accelerate
+- Regime predictions are genuinely informative: calm predictions correspond to 12% realized vol, turbulent to 22%
+- During Sep-Dec 2008: market fell 29%, strategy lost 4.3%
+- Macro features (credit spread, yield curve) improve regime detection vs equity-only signals
+- Strategy survives 30+ bps transaction costs (institutional costs are 5-10 bps)
+- Cross-asset extension to crude oil confirms regime detection generalizes
 
-| Model                   | Input               | What It Captures                                                                                    |
-| ----------------------- | ------------------- | --------------------------------------------------------------------------------------------------- |
-| **Hidden Markov Model** | PCA stress index    | Latent state transitions via Gaussian emissions. Produces posterior regime probabilities.           |
-| **GARCH(1,1)**          | Market returns      | Conditional volatility clustering. Student-t innovations. Expanding-window quantile classification. |
-| **K-Means**             | Volatility + Volume | Cross-sectional regime clustering. Clusters ordered by centroid volatility.                         |
-| **Ensemble**            | All three           | Probability-weighted voting. Reduces single-model noise.                                            |
-
-All models are refitted quarterly using an expanding training window (minimum 5 years). Every prediction is strictly out-of-sample.
-
-## Strategies
-
-Regime probabilities drive four allocation strategies:
-
-| Strategy        | Rule                                   | Characteristics                     |
-| --------------- | -------------------------------------- | ----------------------------------- |
-| Binary Regime   | 100% equity in calm, 0% in turbulent   | Sharp risk-off, higher turnover     |
-| Proportional    | Allocation = P(calm)                   | Smooth transitions, lower turnover  |
-| Vol-Targeted    | Scale to 10% annualized vol target     | Constant risk budget across regimes |
-| Regime Momentum | Higher conviction when regime persists | Trend-following flavor              |
-
-All strategies include:
-
-- 1-day execution lag (signal at close T, trade at close T+1)
-- Confirmation filter (regime must persist N days before switching)
-- Rate limiter (max 25% allocation change per day)
-- Transaction costs at 5 bps + 2 bps slippage, with sensitivity from 0 to 20 bps
-
-Benchmarks: buy-and-hold, 60/40 equity-bond.
-
-## Features
-
-Six cross-sectional indicators computed daily from a 295-stock universe:
-
-| Indicator          | Definition                               |
-| ------------------ | ---------------------------------------- |
-| Market Direction   | Mean log return across stocks            |
-| Market Breadth     | Fraction of stocks with positive returns |
-| Market Volatility  | Cross-sectional return dispersion        |
-| Market ATR         | Average normalized true range            |
-| Market Volume      | Mean change in log volume                |
-| Market Correlation | Rolling pairwise correlation             |
-
-PCA extracts two factors: **PC1** (market trend) and **PC2** (systemic stress). PC2 detects the dot-com crash, 2008 crisis, and COVID sell-off without using drawdown as an input.
-
-## Data
-
-| Dataset               | Source           | Frequency |
-| --------------------- | ---------------- | --------- |
-| US equity OHLCV       | yfinance         | Daily     |
-| VIX / VIX3M           | yfinance         | Daily     |
-| Risk-free rate        | FRED (3M T-bill) | Daily     |
-| Treasury bond returns | yfinance (TLT)   | Daily     |
-
-Data downloads automatically via `make data`. No manual preparation needed.
-
-## Key Research Outputs
-
-- Walk-forward regime predictions (strictly out-of-sample)
-- Strategy backtests with realistic transaction costs
-- Regime-conditional performance analysis
-- Transaction cost sensitivity and breakeven analysis
-- Full performance tearsheet with bootstrap confidence intervals
-- Static research website presenting the results
-
-## Quickstart
+## Quick start
 
 ```bash
 git clone https://github.com/brianbanna/systematic-regime-trading.git
 cd systematic-regime-trading
-
+pip install -r requirements.txt
 pip install -e .
 
-# Run the full pipeline
-make all
-
-# Or run stages individually
-make data          # Download and clean market data
-make features      # Compute indicators and PCA factors
-make models        # Train regime models (walk-forward)
-make signals       # Generate allocation signals
-make backtest      # Run strategy backtests with costs
-make evaluate      # Compute performance metrics
-make report        # Generate tearsheet and charts
-
-# Run tests
-make test
+make run-from-scratch    # Download data, run pipeline, generate figures
+make test                # Run 140 tests
 ```
 
-Requires Python 3.10+.
+Individual steps:
 
-## Project Structure
-
-```
-systematic-regime-trading/
-├── configs/
-│   ├── data.yaml              # Universe, date range, data sources
-│   ├── features.yaml          # Indicator windows, PCA config
-│   ├── models.yaml            # HMM, GARCH, KMeans, ensemble params
-│   ├── strategy.yaml          # Allocation rules, filters, rebalancing
-│   ├── backtest.yaml          # Costs, slippage, execution lag
-│   └── evaluation.yaml        # Benchmarks, metrics, bootstrap config
-│
-├── src/
-│   └── systematic_regime_trading/
-│       ├── data/              # Loaders, cleaning, Parquet storage
-│       ├── features/          # Indicators, PCA, transforms
-│       ├── models/            # HMM, GARCH, KMeans, ensemble, walk-forward
-│       ├── signals/           # Regime → allocation, filters, vol targeting
-│       ├── backtest/          # Vectorized engine, costs, benchmarks
-│       ├── evaluation/        # Metrics, rolling analysis, significance
-│       ├── visualization/     # Performance charts, regime plots, tearsheet
-│       └── utils/             # Config loader, paths, constants
-│
-├── notebooks/                 # Step-by-step research notebooks
-├── data/                      # Raw + processed data (git-ignored)
-├── results/                   # Figures, tables, tearsheets
-├── website/                   # Static research site (GitHub Pages)
-├── tests/                     # Unit and integration tests
-├── Makefile                   # Pipeline orchestration
-└── pyproject.toml             # Dependencies
+```bash
+make data-fresh          # Download 190-ticker NASDAQ + SPY + VIX + TLT
+make run                 # Full pipeline: features -> regimes -> signals -> backtest
+make figures             # Generate all charts (dark theme, 300 DPI)
 ```
 
-All parameters are externalized to YAML configs. No magic numbers in source code.
+## Project structure
+
+```
+configs/                        # All parameters in YAML (no magic numbers)
+  models.yaml                   # HMM, GARCH, KMeans, GMM, Markov-Switching
+  strategy.yaml                 # Allocation rules, filters, vol targets
+  backtest.yaml                 # Transaction costs, execution lag
+src/systematic_regime_trading/
+  models/                       # 5 regime detectors + ensemble
+  signals/                      # Regime -> allocation, filters, vol targeting
+  backtest/                     # Vectorized engine, costs, benchmarks
+  evaluation/                   # Metrics, factor regression, significance
+  data/                         # Loaders, cleaning, macro data
+scripts/
+  run_pipeline.py               # End-to-end pipeline (make run)
+  run_oos_extension.py          # 2021-2026 forward test
+  run_commodities.py            # Crude oil regime detection
+  generate_figures.py           # All charts (make figures)
+results/                        # Performance table, predictions, backtest curves
+website/                        # Research site (dark theme, interactive Plotly)
+tests/                          # 140 tests
+```
+
+## Requirements
+
+Python 3.12. Key dependencies: pandas, numpy, scikit-learn, hmmlearn, arch, statsmodels, matplotlib, plotly, yfinance. Full pinned versions in `requirements.txt`.
 
 ## License
 
 MIT
-
-## Disclaimer
-
-Research code for educational and demonstration purposes. Not investment advice. Backtested performance does not guarantee future results.

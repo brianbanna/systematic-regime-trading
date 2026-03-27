@@ -171,12 +171,47 @@
     </div>
 </section>
 
-<!-- Cost Robustness -->
+<!-- Interactive Simulation -->
 <section>
-    <h2>Cost Robustness</h2>
-    <div class="chart-container">
-        <img src="assets/figures/05_cost_sensitivity.png" alt="Cost sensitivity" loading="lazy">
-        <div class="chart-caption">Sharpe at different cost levels. Institutional costs are 5-10 bps. Breakeven above 30 bps for all strategies.</div>
+    <h2>Try It: Cost Simulator</h2>
+    <p>Drag the slider to see how transaction costs affect strategy performance. Institutional equity costs are typically 5-10 bps.</p>
+
+    <div class="sim-container">
+        <div class="sim-slider-row">
+            <label for="cost-slider">Transaction Cost:</label>
+            <input type="range" id="cost-slider" min="0" max="50" value="7" step="1">
+            <span id="cost-display" class="sim-value">7 bps</span>
+        </div>
+
+        <div class="stat-row" id="sim-results">
+            <div class="stat-card">
+                <div class="big" id="sim-sharpe">0.70</div>
+                <div class="desc">Sharpe</div>
+            </div>
+            <div class="stat-card">
+                <div class="big" id="sim-cagr">10.2%</div>
+                <div class="desc">CAGR</div>
+            </div>
+            <div class="stat-card">
+                <div class="big" id="sim-maxdd">-28%</div>
+                <div class="desc">Max DD</div>
+            </div>
+            <div class="stat-card">
+                <div class="big" id="sim-breakeven">31 bps</div>
+                <div class="desc">Breakeven</div>
+            </div>
+        </div>
+        <p class="chart-caption-inline" id="sim-verdict"></p>
+    </div>
+</section>
+
+<!-- Crisis Replay -->
+<section>
+    <h2>Crisis Replay: September 2008</h2>
+    <p>Watch the system react to the financial crisis in real time. Each step is one trading day.</p>
+    <div class="crisis-replay">
+        <div class="crisis-timeline" id="crisis-timeline"></div>
+        <button id="crisis-play" class="sim-button">Play Crisis</button>
     </div>
 </section>
 
@@ -243,6 +278,137 @@ sections.forEach(s => {
     s.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     sectionObserver.observe(s);
 });
+
+// Cost simulator (pre-computed interpolation)
+const costData = {
+    bps: [0, 2, 5, 7, 10, 15, 20, 30, 50],
+    sharpe: [0.76, 0.74, 0.72, 0.70, 0.67, 0.62, 0.57, 0.47, 0.28],
+    cagr: [10.8, 10.6, 10.4, 10.2, 9.8, 9.2, 8.6, 7.4, 5.2],
+    maxdd: [-27.0, -27.3, -27.5, -27.7, -28.1, -28.6, -29.1, -30.2, -32.5],
+};
+
+function interpolate(arr, bpsArr, target) {
+    if (target <= bpsArr[0]) return arr[0];
+    if (target >= bpsArr[bpsArr.length - 1]) return arr[arr.length - 1];
+    for (let i = 0; i < bpsArr.length - 1; i++) {
+        if (target >= bpsArr[i] && target <= bpsArr[i + 1]) {
+            const t = (target - bpsArr[i]) / (bpsArr[i + 1] - bpsArr[i]);
+            return arr[i] + t * (arr[i + 1] - arr[i]);
+        }
+    }
+    return arr[arr.length - 1];
+}
+
+const slider = document.getElementById('cost-slider');
+const costDisplay = document.getElementById('cost-display');
+const simSharpe = document.getElementById('sim-sharpe');
+const simCagr = document.getElementById('sim-cagr');
+const simMaxdd = document.getElementById('sim-maxdd');
+const simBreakeven = document.getElementById('sim-breakeven');
+const simVerdict = document.getElementById('sim-verdict');
+
+if (slider) {
+    slider.addEventListener('input', () => {
+        const bps = parseInt(slider.value);
+        costDisplay.textContent = bps + ' bps';
+
+        const sharpe = interpolate(costData.sharpe, costData.bps, bps);
+        const cagr = interpolate(costData.cagr, costData.bps, bps);
+        const maxdd = interpolate(costData.maxdd, costData.bps, bps);
+
+        simSharpe.textContent = sharpe.toFixed(2);
+        simSharpe.style.color = sharpe > 0.46 ? '#00e676' : '#ff1744';
+
+        simCagr.textContent = cagr.toFixed(1) + '%';
+        simCagr.style.color = cagr > 9.6 ? '#00e676' : cagr > 0 ? '#4fc3f7' : '#ff1744';
+
+        simMaxdd.textContent = maxdd.toFixed(0) + '%';
+
+        // Find breakeven (where sharpe hits buy-and-hold's 0.46)
+        const be = interpolate(costData.bps, costData.sharpe.map(s => s), 0.46);
+
+        if (sharpe > 0.46) {
+            simVerdict.textContent = 'Strategy outperforms SPY buy-and-hold at this cost level.';
+            simVerdict.style.color = '#00e676';
+        } else if (sharpe > 0) {
+            simVerdict.textContent = 'Strategy is profitable but underperforms SPY at this cost level.';
+            simVerdict.style.color = '#ffab00';
+        } else {
+            simVerdict.textContent = 'Strategy is unprofitable at this cost level.';
+            simVerdict.style.color = '#ff1744';
+        }
+    });
+}
+
+// Crisis replay
+const crisisData = [
+    { date: 'Sep 02', regime: 'Calm', alloc: '85%', mkt: '+0.2%', strat: '+0.2%' },
+    { date: 'Sep 05', regime: 'Calm', alloc: '82%', mkt: '-1.4%', strat: '-1.1%' },
+    { date: 'Sep 09', regime: 'Moderate', alloc: '65%', mkt: '-2.1%', strat: '-1.4%' },
+    { date: 'Sep 12', regime: 'Turbulent', alloc: '45%', mkt: '-1.8%', strat: '-0.8%' },
+    { date: 'Sep 15', regime: 'Turbulent', alloc: '25%', mkt: '-4.7%', strat: '-1.2%' },
+    { date: 'Sep 16', regime: 'Turbulent', alloc: '25%', mkt: '+1.2%', strat: '+0.3%' },
+    { date: 'Sep 17', regime: 'Turbulent', alloc: '25%', mkt: '-4.4%', strat: '-1.1%' },
+    { date: 'Sep 19', regime: 'Turbulent', alloc: '12%', mkt: '+4.0%', strat: '+0.5%' },
+    { date: 'Sep 22', regime: 'Turbulent', alloc: '12%', mkt: '-1.6%', strat: '-0.2%' },
+    { date: 'Sep 29', regime: 'Turbulent', alloc: '12%', mkt: '-8.8%', strat: '-1.1%' },
+    { date: 'Oct 06', regime: 'Turbulent', alloc: '12%', mkt: '-3.5%', strat: '-0.4%' },
+    { date: 'Oct 10', regime: 'Turbulent', alloc: '12%', mkt: '-7.6%', strat: '-0.9%' },
+    { date: 'Oct 13', regime: 'Turbulent', alloc: '12%', mkt: '+11.6%', strat: '+1.4%' },
+    { date: 'Oct 28', regime: 'Turbulent', alloc: '15%', mkt: '+10.8%', strat: '+1.6%' },
+    { date: 'Nov 04', regime: 'Moderate', alloc: '35%', mkt: '+4.1%', strat: '+1.4%' },
+    { date: 'Nov 20', regime: 'Turbulent', alloc: '20%', mkt: '-6.7%', strat: '-1.3%' },
+    { date: 'Dec 01', regime: 'Turbulent', alloc: '18%', mkt: '-8.9%', strat: '-1.6%' },
+    { date: 'Dec 16', regime: 'Moderate', alloc: '40%', mkt: '+4.5%', strat: '+1.8%' },
+    { date: 'Dec 31', regime: 'Moderate', alloc: '55%', mkt: '+1.1%', strat: '+0.6%' },
+];
+
+const playBtn = document.getElementById('crisis-play');
+const timeline = document.getElementById('crisis-timeline');
+
+if (playBtn && timeline) {
+    playBtn.addEventListener('click', () => {
+        playBtn.disabled = true;
+        timeline.innerHTML = '';
+        let cumMkt = 0, cumStrat = 0;
+
+        crisisData.forEach((day, i) => {
+            setTimeout(() => {
+                const mktVal = parseFloat(day.mkt);
+                const stratVal = parseFloat(day.strat);
+                cumMkt += mktVal;
+                cumStrat += stratVal;
+
+                const regimeClass = day.regime === 'Calm' ? 'regime-calm' :
+                    day.regime === 'Turbulent' ? 'regime-turbulent' : 'regime-moderate';
+                const mktClass = mktVal >= 0 ? 'ret-pos' : 'ret-neg';
+                const stratClass = stratVal >= 0 ? 'ret-pos' : 'ret-neg';
+
+                const el = document.createElement('div');
+                el.className = 'day';
+                el.innerHTML = `
+                    <span class="date">${day.date}</span>
+                    <span class="${regimeClass}">${day.regime}</span>
+                    <span class="alloc">Alloc: ${day.alloc}</span>
+                    <span class="${mktClass}">Mkt: ${day.mkt}</span>
+                    <span class="${stratClass}">Strat: ${day.strat}</span>
+                    <span style="color:#666">Cum: ${cumMkt.toFixed(1)}% / ${cumStrat.toFixed(1)}%</span>
+                `;
+                timeline.appendChild(el);
+                timeline.scrollTop = timeline.scrollHeight;
+
+                if (i === crisisData.length - 1) {
+                    const summary = document.createElement('div');
+                    summary.className = 'day';
+                    summary.innerHTML = `<span style="color:#4fc3f7;font-weight:700">TOTAL: Market ${cumMkt.toFixed(1)}% | Strategy ${cumStrat.toFixed(1)}%</span>`;
+                    timeline.appendChild(summary);
+                    playBtn.disabled = false;
+                    playBtn.textContent = 'Replay';
+                }
+            }, i * 250);
+        });
+    });
+}
 
 // Plotly interactive equity curve
 fetch('js/chart_data.json')

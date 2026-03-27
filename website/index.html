@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
     <script src="js/chart_data_inline.js"></script>
-    <script src="js/oos_data.js"></script>
+    <script src="js/crisis_data.js"></script>
 </head>
 <body>
 
@@ -207,10 +207,10 @@
     </div>
 </section>
 
-<!-- Forward Test -->
+<!-- Crisis Simulation -->
 <section>
-    <h2>Forward Test: 2021 to 2026</h2>
-    <p>The models were trained on 2000-2020 data and recalibrated quarterly on new data as it arrived. Watch how a $10,000 investment evolves on data the system never trained on.</p>
+    <h2>Through the 2008 Crisis</h2>
+    <p>$10,000 invested in September 2007, right before the worst financial crisis in modern history. Watch what happens.</p>
     <div class="sim-container">
         <div id="growth-chart" class="interactive-chart"></div>
         <div class="sim-slider-row">
@@ -342,11 +342,11 @@
     }, { responsive:true, displayModeBar:!mob,
          modeBarButtonsToRemove:['lasso2d','select2d','autoScale2d'] });
 
-    // === Forward Test: Growth of $10,000 (2021-2026, OOS data) ===
-    if (typeof OOS_DATA === 'undefined') return;
+    // === Crisis Simulation: $10,000 through 2008 ===
+    if (typeof CRISIS_DATA === 'undefined') return;
 
-    var oosStrat = OOS_DATA['Regime Strategy'];
-    var oosSpy = OOS_DATA['SPY Buy & Hold'];
+    var oosStrat = CRISIS_DATA['Regime Strategy'];
+    var oosSpy = CRISIS_DATA['SPY Buy & Hold'];
     if (!oosStrat || !oosSpy) return;
 
     var oDates = oosStrat.dates;
@@ -362,7 +362,7 @@
             font:{color:'#999',family:'Inter,sans-serif',size:mob?10:12},
             xaxis:{gridcolor:'#222',showline:false,range:[oDates[0],oDates[oN-1]]},
             yaxis:{gridcolor:'#222',title:mob?'':'Portfolio Value ($)',showline:false,
-                   tickprefix:'$',tickformat:',.0f',range:[8000,oMax*1.08]},
+                   tickprefix:'$',tickformat:',.0f',range:[3500,oMax*1.08]},
             legend:{bgcolor:'rgba(17,17,17,0.95)',bordercolor:'#222',
                     orientation:'h',y:mob?-0.15:1.05,font:{size:mob?9:11}},
             margin:{t:10,r:10,b:mob?50:40,l:mob?50:65},

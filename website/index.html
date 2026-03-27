@@ -13,6 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+    <script src="js/chart_data_inline.js"></script>
 </head>
 <body>
 
@@ -355,10 +356,9 @@ const growthStatus = document.getElementById('growth-status');
 const growthStrat = document.getElementById('growth-strat');
 const growthSpy = document.getElementById('growth-spy');
 
-if (growthBtn) {
-    fetch('js/chart_data.json')
-        .then(r => r.json())
-        .then(chartData => {
+if (growthBtn && typeof CHART_DATA !== 'undefined') {
+    (function() {
+            const chartData = CHART_DATA;
             const strat = chartData.strategies['Regime Momentum'];
             const spy = chartData.strategies['Buy & Hold'];
             if (!strat || !spy) return;
@@ -433,13 +433,13 @@ if (growthBtn) {
                 requestAnimationFrame(tick);
             });
         })
-        .catch(e => console.error('Growth chart error:', e));
+    })();
 }
 
 // Plotly interactive equity curve
-fetch('js/chart_data.json')
-    .then(r => r.json())
-    .then(data => {
+if (typeof CHART_DATA !== 'undefined') {
+    (function() {
+        const data = CHART_DATA;
         const traces = [];
         for (const [name, strat] of Object.entries(data.strategies)) {
             traces.push({
@@ -470,11 +470,9 @@ fetch('js/chart_data.json')
             displayModeBar: !isMobile,
             modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
         });
-    })
-    .catch(() => {
-        document.getElementById('plotly-equity-curve').innerHTML =
-            '<img src="assets/figures/01_cumulative_returns.png" style="width:100%;border-radius:10px">';
     });
+    })();
+}
 </script>
 </body>
 </html>

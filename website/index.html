@@ -257,222 +257,162 @@
 <footer></footer>
 
 <script>
-// Animated counters
-document.querySelectorAll('.badge .value').forEach(el => {
-    const text = el.textContent;
-    el.style.opacity = '0';
-    const observer = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting) {
-            el.style.transition = 'opacity 0.5s';
-            el.style.opacity = '1';
-            observer.disconnect();
-        }
+(function() {
+    // Fade-in sections on scroll
+    document.querySelectorAll('section').forEach(function(s) {
+        s.style.opacity = '0';
+        s.style.transform = 'translateY(20px)';
+        s.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     });
-    observer.observe(el);
-});
-
-// Fade-in sections on scroll
-const sections = document.querySelectorAll('section');
-const sectionObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
-    });
-}, { threshold: 0.1 });
-
-sections.forEach(s => {
-    s.style.opacity = '0';
-    s.style.transform = 'translateY(20px)';
-    s.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    sectionObserver.observe(s);
-});
-
-// Cost simulator (pre-computed interpolation)
-const costData = {
-    bps: [0, 2, 5, 7, 10, 15, 20, 30, 50],
-    sharpe: [0.76, 0.74, 0.72, 0.70, 0.67, 0.62, 0.57, 0.47, 0.28],
-    cagr: [10.8, 10.6, 10.4, 10.2, 9.8, 9.2, 8.6, 7.4, 5.2],
-    maxdd: [-27.0, -27.3, -27.5, -27.7, -28.1, -28.6, -29.1, -30.2, -32.5],
-};
-
-function interpolate(arr, bpsArr, target) {
-    if (target <= bpsArr[0]) return arr[0];
-    if (target >= bpsArr[bpsArr.length - 1]) return arr[arr.length - 1];
-    for (let i = 0; i < bpsArr.length - 1; i++) {
-        if (target >= bpsArr[i] && target <= bpsArr[i + 1]) {
-            const t = (target - bpsArr[i]) / (bpsArr[i + 1] - bpsArr[i]);
-            return arr[i] + t * (arr[i + 1] - arr[i]);
-        }
-    }
-    return arr[arr.length - 1];
-}
-
-const slider = document.getElementById('cost-slider');
-const costDisplay = document.getElementById('cost-display');
-const simSharpe = document.getElementById('sim-sharpe');
-const simCagr = document.getElementById('sim-cagr');
-const simMaxdd = document.getElementById('sim-maxdd');
-const simBreakeven = document.getElementById('sim-breakeven');
-const simVerdict = document.getElementById('sim-verdict');
-
-if (slider) {
-    slider.addEventListener('input', () => {
-        const bps = parseInt(slider.value);
-        costDisplay.textContent = bps + ' bps';
-
-        const sharpe = interpolate(costData.sharpe, costData.bps, bps);
-        const cagr = interpolate(costData.cagr, costData.bps, bps);
-        const maxdd = interpolate(costData.maxdd, costData.bps, bps);
-
-        simSharpe.textContent = sharpe.toFixed(2);
-        simSharpe.style.color = sharpe > 0.46 ? '#00e676' : '#ff1744';
-
-        simCagr.textContent = cagr.toFixed(1) + '%';
-        simCagr.style.color = cagr > 9.6 ? '#00e676' : cagr > 0 ? '#4fc3f7' : '#ff1744';
-
-        simMaxdd.textContent = maxdd.toFixed(0) + '%';
-
-        // Find breakeven (where sharpe hits buy-and-hold's 0.46)
-        const be = interpolate(costData.bps, costData.sharpe.map(s => s), 0.46);
-
-        if (sharpe > 0.46) {
-            simVerdict.textContent = 'Strategy outperforms SPY buy-and-hold at this cost level.';
-            simVerdict.style.color = '#00e676';
-        } else if (sharpe > 0) {
-            simVerdict.textContent = 'Strategy is profitable but underperforms SPY at this cost level.';
-            simVerdict.style.color = '#ffab00';
-        } else {
-            simVerdict.textContent = 'Strategy is unprofitable at this cost level.';
-            simVerdict.style.color = '#ff1744';
-        }
-    });
-}
-
-// Growth of $10,000 animation
-const growthBtn = document.getElementById('growth-play');
-const growthStatus = document.getElementById('growth-status');
-const growthStrat = document.getElementById('growth-strat');
-const growthSpy = document.getElementById('growth-spy');
-
-if (growthBtn && typeof CHART_DATA !== 'undefined') {
-    (function() {
-            const chartData = CHART_DATA;
-            const strat = chartData.strategies['Regime Momentum'];
-            const spy = chartData.strategies['Buy & Hold'];
-            if (!strat || !spy) return;
-
-            const dates = strat.dates;
-            const stratGrowth = strat.cumulative_return.map(v => v * 10000);
-            const spyGrowth = spy.cumulative_return.map(v => v * 10000);
-            const n = dates.length;
-            const isMobile = window.innerWidth < 640;
-
-            const makeLayout = () => ({
-                paper_bgcolor: '#111', plot_bgcolor: '#111',
-                font: { color: '#999', family: 'Inter, sans-serif', size: isMobile ? 10 : 12 },
-                xaxis: { gridcolor: '#222', showline: false, range: [dates[0], dates[n-1]] },
-                yaxis: { gridcolor: '#222', title: isMobile ? '' : 'Portfolio Value ($)',
-                         showline: false, tickprefix: '$', tickformat: ',.0f',
-                         range: [5000, Math.max(...stratGrowth, ...spyGrowth) * 1.05] },
-                legend: { bgcolor: 'rgba(17,17,17,0.95)', bordercolor: '#222',
-                          orientation: 'h', y: isMobile ? -0.15 : 1.05,
-                          font: { size: isMobile ? 9 : 11 } },
-                margin: { t: 10, r: 10, b: isMobile ? 50 : 40, l: isMobile ? 50 : 65 },
-                hovermode: 'x unified',
-                shapes: [{ type: 'line', x0: dates[0], x1: dates[n-1],
-                           y0: 10000, y1: 10000, line: { color: '#333', width: 1, dash: 'dash' } }],
-            });
-
-            const makeTraces = (len) => [
-                { x: dates.slice(0, len), y: stratGrowth.slice(0, len), type: 'scatter',
-                  mode: 'lines', name: 'Regime Strategy', line: { color: '#4fc3f7', width: 2.5 } },
-                { x: dates.slice(0, len), y: spyGrowth.slice(0, len), type: 'scatter',
-                  mode: 'lines', name: 'SPY Buy & Hold', line: { color: '#666', width: 1.2, dash: 'dot' } },
-            ];
-
-            // Show full chart initially
-            Plotly.newPlot('growth-chart', makeTraces(n), makeLayout(), { responsive: true, displayModeBar: false });
-            growthStrat.textContent = '$' + Math.round(stratGrowth[n-1]).toLocaleString();
-            growthStrat.style.color = '#00e676';
-            growthSpy.textContent = '$' + Math.round(spyGrowth[n-1]).toLocaleString();
-            growthSpy.style.color = '#999';
-
-            growthBtn.addEventListener('click', () => {
-                growthBtn.disabled = true;
-                growthBtn.textContent = 'Running...';
-                growthStrat.textContent = '$10,000';
-                growthSpy.textContent = '$10,000';
-
-                const totalFrames = 150;
-                const step = Math.max(1, Math.floor(n / totalFrames));
-                let frame = 1;
-
-                function tick() {
-                    frame = Math.min(frame + step, n);
-
-                    Plotly.react('growth-chart', makeTraces(frame), makeLayout(), { responsive: true, displayModeBar: false });
-
-                    const sv = stratGrowth[frame - 1];
-                    const bv = spyGrowth[frame - 1];
-                    growthStrat.textContent = '$' + Math.round(sv).toLocaleString();
-                    growthSpy.textContent = '$' + Math.round(bv).toLocaleString();
-                    growthStrat.style.color = sv >= bv ? '#00e676' : '#4fc3f7';
-                    growthSpy.style.color = bv > sv ? '#00e676' : '#999';
-                    growthStatus.textContent = dates[frame - 1];
-
-                    if (frame < n) {
-                        requestAnimationFrame(tick);
-                    } else {
-                        growthBtn.disabled = false;
-                        growthBtn.textContent = 'Replay';
-                    }
-                }
-
-                requestAnimationFrame(tick);
-            });
-        })
-    })();
-}
-
-// Plotly interactive equity curve
-if (typeof CHART_DATA !== 'undefined') {
-    (function() {
-        const data = CHART_DATA;
-        const traces = [];
-        for (const [name, strat] of Object.entries(data.strategies)) {
-            traces.push({
-                x: strat.dates,
-                y: strat.cumulative_return,
-                type: 'scatter',
-                mode: 'lines',
-                name: name,
-                line: { color: strat.color, width: name === 'Regime Momentum' ? 2.5 : 1.2 },
-                hovertemplate: name + '<br>%{x}<br>%{y:.2f}x<br>%{customdata:+.2f}%<extra></extra>',
-                customdata: strat.daily_return,
-            });
-        }
-        const isMobile = window.innerWidth < 640;
-        Plotly.newPlot('plotly-equity-curve', traces, {
-            paper_bgcolor: '#111',
-            plot_bgcolor: '#111',
-            font: { color: '#999', family: 'Inter, sans-serif', size: isMobile ? 10 : 12 },
-            xaxis: { gridcolor: '#222', showline: false },
-            yaxis: { gridcolor: '#222', title: isMobile ? '' : 'Growth of $1', showline: false },
-            legend: { bgcolor: 'rgba(17,17,17,0.95)', bordercolor: '#222', font: { size: isMobile ? 9 : 11 },
-                      orientation: isMobile ? 'h' : 'v', y: isMobile ? -0.2 : 1 },
-            margin: { t: 10, r: 10, b: isMobile ? 60 : 40, l: isMobile ? 40 : 55 },
-            hovermode: 'x unified',
-            dragmode: 'zoom',
-        }, {
-            responsive: true,
-            displayModeBar: !isMobile,
-            modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
+    var obs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+            if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
         });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('section').forEach(function(s) { obs.observe(s); });
+
+    // Cost simulator
+    var costBps =    [0, 2, 5, 7, 10, 15, 20, 30, 50];
+    var costSharpe = [0.76, 0.74, 0.72, 0.70, 0.67, 0.62, 0.57, 0.47, 0.28];
+    var costCagr =   [10.8, 10.6, 10.4, 10.2, 9.8, 9.2, 8.6, 7.4, 5.2];
+    var costMaxdd =  [-27.0, -27.3, -27.5, -27.7, -28.1, -28.6, -29.1, -30.2, -32.5];
+
+    function lerp(arr, keys, t) {
+        if (t <= keys[0]) return arr[0];
+        if (t >= keys[keys.length-1]) return arr[arr.length-1];
+        for (var i=0; i<keys.length-1; i++) {
+            if (t >= keys[i] && t <= keys[i+1]) {
+                var f = (t - keys[i]) / (keys[i+1] - keys[i]);
+                return arr[i] + f * (arr[i+1] - arr[i]);
+            }
+        }
+        return arr[arr.length-1];
+    }
+
+    var sl = document.getElementById('cost-slider');
+    if (sl) {
+        sl.addEventListener('input', function() {
+            var b = parseInt(sl.value);
+            document.getElementById('cost-display').textContent = b + ' bps';
+            var sh = lerp(costSharpe, costBps, b);
+            var ca = lerp(costCagr, costBps, b);
+            var md = lerp(costMaxdd, costBps, b);
+            var elS = document.getElementById('sim-sharpe');
+            var elC = document.getElementById('sim-cagr');
+            var elM = document.getElementById('sim-maxdd');
+            var elV = document.getElementById('sim-verdict');
+            elS.textContent = sh.toFixed(2);
+            elS.style.color = sh > 0.46 ? '#00e676' : '#ff1744';
+            elC.textContent = ca.toFixed(1) + '%';
+            elC.style.color = ca > 9.6 ? '#00e676' : ca > 0 ? '#4fc3f7' : '#ff1744';
+            elM.textContent = md.toFixed(0) + '%';
+            if (sh > 0.46) { elV.textContent = 'Outperforms SPY at this cost level.'; elV.style.color = '#00e676'; }
+            else if (sh > 0) { elV.textContent = 'Profitable but underperforms SPY.'; elV.style.color = '#ffab00'; }
+            else { elV.textContent = 'Unprofitable at this cost level.'; elV.style.color = '#ff1744'; }
+        });
+    }
+
+    // Wait for CHART_DATA and Plotly
+    if (typeof CHART_DATA === 'undefined' || typeof Plotly === 'undefined') return;
+
+    var D = CHART_DATA;
+    var mob = window.innerWidth < 640;
+
+    // === Performance equity curve ===
+    var eqTraces = [];
+    for (var name in D.strategies) {
+        var s = D.strategies[name];
+        eqTraces.push({
+            x: s.dates, y: s.cumulative_return,
+            type: 'scatter', mode: 'lines', name: name,
+            line: { color: s.color, width: name === 'Regime Momentum' ? 2.5 : 1.2 },
+            hovertemplate: name + '<br>%{x}<br>%{y:.2f}x<extra></extra>'
+        });
+    }
+    Plotly.newPlot('plotly-equity-curve', eqTraces, {
+        paper_bgcolor:'#111', plot_bgcolor:'#111',
+        font: { color:'#999', family:'Inter,sans-serif', size: mob?10:12 },
+        xaxis: { gridcolor:'#222', showline:false },
+        yaxis: { gridcolor:'#222', title: mob?'':'Growth of $1', showline:false },
+        legend: { bgcolor:'rgba(17,17,17,0.95)', bordercolor:'#222',
+                  font:{size:mob?9:11}, orientation:mob?'h':'v', y:mob?-0.2:1 },
+        margin: { t:10, r:10, b:mob?60:40, l:mob?40:55 },
+        hovermode: 'x unified', dragmode: 'zoom'
+    }, { responsive:true, displayModeBar:!mob,
+         modeBarButtonsToRemove:['lasso2d','select2d','autoScale2d'] });
+
+    // === Growth of $10,000 ===
+    var strat = D.strategies['Regime Momentum'];
+    var spy = D.strategies['Buy & Hold'];
+    if (!strat || !spy) return;
+
+    var dates = strat.dates;
+    var sG = strat.cumulative_return.map(function(v){return v*10000;});
+    var bG = spy.cumulative_return.map(function(v){return v*10000;});
+    var N = dates.length;
+    var yMax = 0;
+    for (var i=0;i<N;i++) { if(sG[i]>yMax) yMax=sG[i]; if(bG[i]>yMax) yMax=bG[i]; }
+
+    function gLayout() {
+        return {
+            paper_bgcolor:'#111', plot_bgcolor:'#111',
+            font:{color:'#999',family:'Inter,sans-serif',size:mob?10:12},
+            xaxis:{gridcolor:'#222',showline:false,range:[dates[0],dates[N-1]]},
+            yaxis:{gridcolor:'#222',title:mob?'':'Portfolio Value ($)',showline:false,
+                   tickprefix:'$',tickformat:',.0f',range:[5000,yMax*1.05]},
+            legend:{bgcolor:'rgba(17,17,17,0.95)',bordercolor:'#222',
+                    orientation:'h',y:mob?-0.15:1.05,font:{size:mob?9:11}},
+            margin:{t:10,r:10,b:mob?50:40,l:mob?50:65},
+            hovermode:'x unified',
+            shapes:[{type:'line',x0:dates[0],x1:dates[N-1],y0:10000,y1:10000,
+                     line:{color:'#333',width:1,dash:'dash'}}]
+        };
+    }
+
+    function gTraces(len) {
+        return [
+            {x:dates.slice(0,len),y:sG.slice(0,len),type:'scatter',mode:'lines',
+             name:'Regime Strategy',line:{color:'#4fc3f7',width:2.5}},
+            {x:dates.slice(0,len),y:bG.slice(0,len),type:'scatter',mode:'lines',
+             name:'SPY Buy & Hold',line:{color:'#666',width:1.2,dash:'dot'}}
+        ];
+    }
+
+    var elGS = document.getElementById('growth-strat');
+    var elGB = document.getElementById('growth-spy');
+    var elGSt = document.getElementById('growth-status');
+    var btnG = document.getElementById('growth-play');
+
+    Plotly.newPlot('growth-chart', gTraces(N), gLayout(), {responsive:true,displayModeBar:false});
+    elGS.textContent = '$' + Math.round(sG[N-1]).toLocaleString();
+    elGS.style.color = '#00e676';
+    elGB.textContent = '$' + Math.round(bG[N-1]).toLocaleString();
+    elGB.style.color = '#999';
+
+    btnG.addEventListener('click', function() {
+        btnG.disabled = true;
+        btnG.textContent = 'Running...';
+        elGS.textContent = '$10,000';
+        elGB.textContent = '$10,000';
+
+        var step = Math.max(1, Math.floor(N/150));
+        var f = 1;
+
+        function tick() {
+            f = Math.min(f + step, N);
+            Plotly.react('growth-chart', gTraces(f), gLayout(), {responsive:true,displayModeBar:false});
+            var sv = sG[f-1], bv = bG[f-1];
+            elGS.textContent = '$' + Math.round(sv).toLocaleString();
+            elGB.textContent = '$' + Math.round(bv).toLocaleString();
+            elGS.style.color = sv >= bv ? '#00e676' : '#4fc3f7';
+            elGB.style.color = bv > sv ? '#00e676' : '#999';
+            elGSt.textContent = dates[f-1];
+            if (f < N) { requestAnimationFrame(tick); }
+            else { btnG.disabled = false; btnG.textContent = 'Replay'; }
+        }
+        requestAnimationFrame(tick);
     });
-    })();
-}
+})();
 </script>
 </body>
 </html>

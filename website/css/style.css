@@ -301,41 +301,6 @@ code { font-family: 'SF Mono', 'Fira Code', monospace; color: var(--text); }
     font-size: 0.9rem;
 }
 
-/* Crisis replay */
-.crisis-replay {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    margin: 20px 0;
-}
-
-.crisis-timeline {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 0.75rem;
-    line-height: 1.8;
-    color: var(--text-muted);
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 12px;
-}
-
-.crisis-timeline .day {
-    display: flex;
-    gap: 8px;
-    padding: 3px 0;
-    border-bottom: 1px solid #1a1a1a;
-    flex-wrap: wrap;
-}
-
-.crisis-timeline .day .date { color: var(--text-muted); min-width: 80px; }
-.crisis-timeline .day .regime-calm { color: var(--green); }
-.crisis-timeline .day .regime-turbulent { color: var(--red); }
-.crisis-timeline .day .regime-moderate { color: var(--amber); }
-.crisis-timeline .day .alloc { color: var(--accent); }
-.crisis-timeline .day .ret-pos { color: var(--green); }
-.crisis-timeline .day .ret-neg { color: var(--red); }
-
 .sim-button {
     background: var(--accent);
     color: #000;

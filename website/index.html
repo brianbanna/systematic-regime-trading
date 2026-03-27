@@ -253,11 +253,7 @@
 
 </main>
 
-<footer>
-    <div class="container">
-        <p><a href="https://brianbanna.com">brianbanna.com</a></p>
-    </div>
-</footer>
+<footer></footer>
 
 <script>
 // Animated counters
@@ -367,96 +363,77 @@ if (growthBtn) {
             const spy = chartData.strategies['Buy & Hold'];
             if (!strat || !spy) return;
 
-            // Pre-compute growth curves
             const dates = strat.dates;
             const stratGrowth = strat.cumulative_return.map(v => v * 10000);
             const spyGrowth = spy.cumulative_return.map(v => v * 10000);
             const n = dates.length;
-
-            // Initial static chart
             const isMobile = window.innerWidth < 640;
-            const stratTrace = {
-                x: dates, y: stratGrowth, type: 'scatter', mode: 'lines',
-                name: 'Regime Strategy', line: { color: '#4fc3f7', width: 2.5 },
-            };
-            const spyTrace = {
-                x: dates, y: spyGrowth, type: 'scatter', mode: 'lines',
-                name: 'SPY Buy & Hold', line: { color: '#666', width: 1.2, dash: 'dot' },
-            };
-            const layout = {
+
+            const makeLayout = () => ({
                 paper_bgcolor: '#111', plot_bgcolor: '#111',
                 font: { color: '#999', family: 'Inter, sans-serif', size: isMobile ? 10 : 12 },
-                xaxis: { gridcolor: '#222', showline: false },
-                yaxis: { gridcolor: '#222', title: isMobile ? '' : 'Portfolio Value ($)', showline: false,
-                         tickprefix: '$', tickformat: ',.0f' },
+                xaxis: { gridcolor: '#222', showline: false, range: [dates[0], dates[n-1]] },
+                yaxis: { gridcolor: '#222', title: isMobile ? '' : 'Portfolio Value ($)',
+                         showline: false, tickprefix: '$', tickformat: ',.0f',
+                         range: [5000, Math.max(...stratGrowth, ...spyGrowth) * 1.05] },
                 legend: { bgcolor: 'rgba(17,17,17,0.95)', bordercolor: '#222',
                           orientation: 'h', y: isMobile ? -0.15 : 1.05,
                           font: { size: isMobile ? 9 : 11 } },
                 margin: { t: 10, r: 10, b: isMobile ? 50 : 40, l: isMobile ? 50 : 65 },
                 hovermode: 'x unified',
-                shapes: [{
-                    type: 'line', x0: dates[0], x1: dates[n-1],
-                    y0: 10000, y1: 10000, line: { color: '#333', width: 1, dash: 'dash' },
-                }],
-            };
+                shapes: [{ type: 'line', x0: dates[0], x1: dates[n-1],
+                           y0: 10000, y1: 10000, line: { color: '#333', width: 1, dash: 'dash' } }],
+            });
 
-            Plotly.newPlot('growth-chart', [stratTrace, spyTrace], layout,
-                { responsive: true, displayModeBar: false });
+            const makeTraces = (len) => [
+                { x: dates.slice(0, len), y: stratGrowth.slice(0, len), type: 'scatter',
+                  mode: 'lines', name: 'Regime Strategy', line: { color: '#4fc3f7', width: 2.5 } },
+                { x: dates.slice(0, len), y: spyGrowth.slice(0, len), type: 'scatter',
+                  mode: 'lines', name: 'SPY Buy & Hold', line: { color: '#666', width: 1.2, dash: 'dot' } },
+            ];
 
-            // Update final values
+            // Show full chart initially
+            Plotly.newPlot('growth-chart', makeTraces(n), makeLayout(), { responsive: true, displayModeBar: false });
             growthStrat.textContent = '$' + Math.round(stratGrowth[n-1]).toLocaleString();
             growthStrat.style.color = '#00e676';
             growthSpy.textContent = '$' + Math.round(spyGrowth[n-1]).toLocaleString();
-            growthSpy.style.color = spyGrowth[n-1] > stratGrowth[n-1] ? '#00e676' : '#999';
+            growthSpy.style.color = '#999';
 
-            // Animate button
             growthBtn.addEventListener('click', () => {
                 growthBtn.disabled = true;
                 growthBtn.textContent = 'Running...';
+                growthStrat.textContent = '$10,000';
+                growthSpy.textContent = '$10,000';
 
-                const step = Math.max(1, Math.floor(n / 200));
-                let frame = step;
+                const totalFrames = 150;
+                const step = Math.max(1, Math.floor(n / totalFrames));
+                let frame = 1;
 
-                function animate() {
-                    if (frame >= n) {
-                        frame = n;
-                        growthBtn.disabled = false;
-                        growthBtn.textContent = 'Replay';
-                        growthStatus.textContent = dates[n-1];
-                    }
+                function tick() {
+                    frame = Math.min(frame + step, n);
 
-                    Plotly.restyle('growth-chart', {
-                        x: [[dates.slice(0, frame)], [dates.slice(0, frame)]],
-                        y: [[stratGrowth.slice(0, frame)], [spyGrowth.slice(0, frame)]],
-                    });
+                    Plotly.react('growth-chart', makeTraces(frame), makeLayout(), { responsive: true, displayModeBar: false });
 
                     const sv = stratGrowth[frame - 1];
                     const bv = spyGrowth[frame - 1];
                     growthStrat.textContent = '$' + Math.round(sv).toLocaleString();
                     growthSpy.textContent = '$' + Math.round(bv).toLocaleString();
                     growthStrat.style.color = sv >= bv ? '#00e676' : '#4fc3f7';
-                    growthSpy.style.color = bv >= sv ? '#00e676' : '#999';
+                    growthSpy.style.color = bv > sv ? '#00e676' : '#999';
                     growthStatus.textContent = dates[frame - 1];
 
                     if (frame < n) {
-                        frame += step;
-                        if (frame > n) frame = n;
-                        requestAnimationFrame(animate);
+                        requestAnimationFrame(tick);
+                    } else {
+                        growthBtn.disabled = false;
+                        growthBtn.textContent = 'Replay';
                     }
                 }
 
-                // Reset to start
-                Plotly.restyle('growth-chart', {
-                    x: [[dates.slice(0, 1)], [dates.slice(0, 1)]],
-                    y: [[stratGrowth.slice(0, 1)], [spyGrowth.slice(0, 1)]],
-                });
-                growthStrat.textContent = '$10,000';
-                growthSpy.textContent = '$10,000';
-
-                setTimeout(() => requestAnimationFrame(animate), 300);
+                requestAnimationFrame(tick);
             });
         })
-        .catch(() => {});
+        .catch(e => console.error('Growth chart error:', e));
 }
 
 // Plotly interactive equity curve

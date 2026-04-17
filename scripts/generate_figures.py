@@ -31,68 +31,109 @@ from systematic_regime_trading.evaluation.rolling import (
 RESULTS_DIR = get_path("results")
 FIGURES_DIR = RESULTS_DIR / "figures"
 
-# Style
-REGIME_COLORS = {0: "#2ecc71", 1: "#f39c12", 2: "#e74c3c"}
-REGIME_NAMES = {0: "Calm", 1: "Moderate", 2: "Turbulent"}
+# ─── Editorial palette (matched to brianbanna.com) ───
+BG_COLOR  = "#0a0b0d"   # graphite
+PAPER     = "#121214"   # paper card surface
+FG_COLOR  = "#eae6de"   # bone
+GRID_COLOR = "#2c2b28"  # very subtle grid line
+ACCENT    = "#d4cec0"   # warm stone
+
+UP_COLOR   = "#8ca891"  # muted sage (calm regime, positive)
+MID_COLOR  = "#c5b58c"  # warm tan (moderate regime)
+DOWN_COLOR = "#b87c6c"  # terracotta (turbulent regime, negative)
+
+REGIME_COLORS = {0: UP_COLOR, 1: MID_COLOR, 2: DOWN_COLOR}
+REGIME_NAMES  = {0: "Calm", 1: "Moderate", 2: "Turbulent"}
+
+# Strategy lines: hero in stone accent, others in bone at descending opacity
 STRATEGY_COLORS = {
-    "regime_momentum": "#4fc3f7",
-    "binary_regime": "#81c784",
-    "proportional_regime": "#ffb74d",
-    "vol_targeted": "#ce93d8",
-    "buy_and_hold": "#90a4ae",
-    "sixty_forty": "#a1887f",
-    "risk_parity": "#80cbc4",
+    "regime_momentum":     ACCENT,
+    "binary_regime":       "#eae6de40",
+    "proportional_regime": "#eae6de55",
+    "vol_targeted":        "#eae6de50",
+    "buy_and_hold":        "#eae6de8c",
+    "sixty_forty":         "#eae6de60",
+    "risk_parity":         "#eae6de50",
+    "sma_200":             "#eae6de4c",
+    "vix_20":              "#b87c6c80",
+    "vol_managed":         "#eae6de66",
+    "regime_vol_targeted": "#d4cec0aa",
 }
 STRATEGY_LABELS = {
-    "regime_momentum": "Regime Momentum",
-    "binary_regime": "Binary Regime",
+    "regime_momentum":     "Regime Momentum",
+    "binary_regime":       "Binary Regime",
     "proportional_regime": "Proportional",
-    "vol_targeted": "Vol-Targeted",
-    "buy_and_hold": "Buy & Hold",
-    "sixty_forty": "60/40",
-    "risk_parity": "Risk Parity",
+    "vol_targeted":        "Vol-Targeted",
+    "buy_and_hold":        "Buy & Hold",
+    "sixty_forty":         "60/40",
+    "risk_parity":         "Risk Parity",
+    "sma_200":             "SMA 200",
+    "vix_20":              "VIX > 20",
+    "vol_managed":         "Vol-Managed",
+    "regime_vol_targeted": "Regime Vol-Target",
 }
 
 DPI = 300
 
 
-STRATEGY_COLORS["sma_200"] = "#fff176"
-STRATEGY_COLORS["vix_20"] = "#ef9a9a"
-STRATEGY_COLORS["vol_managed"] = "#b0bec5"
-STRATEGY_COLORS["regime_vol_targeted"] = "#80deea"
-
-STRATEGY_LABELS["sma_200"] = "SMA 200"
-STRATEGY_LABELS["vix_20"] = "VIX > 20"
-STRATEGY_LABELS["vol_managed"] = "Vol-Managed"
-STRATEGY_LABELS["regime_vol_targeted"] = "Regime Vol-Target"
-
-# Dark theme colors
-BG_COLOR = "#0a0a0a"
-FG_COLOR = "#e0e0e0"
-GRID_COLOR = "#2a2a2a"
-ACCENT = "#4fc3f7"
+# ─── Custom colormaps for heatmaps, derived from the editorial palette ───
+def _build_cmaps():
+    from matplotlib.colors import LinearSegmentedColormap
+    return {
+        # Diverging: terracotta → bone → sage  (replaces RdYlGn for monthly returns)
+        "editorial_diverging": LinearSegmentedColormap.from_list(
+            "editorial_diverging", [DOWN_COLOR, "#1a1a1c", UP_COLOR], N=256,
+        ),
+        # Sequential warm: paper → tan → terracotta  (replaces YlOrRd for transitions)
+        "editorial_warm": LinearSegmentedColormap.from_list(
+            "editorial_warm",
+            [PAPER, "#3a3530", "#7a5e52", DOWN_COLOR, ACCENT], N=256,
+        ),
+        # Sequential cool: paper → bone (replaces Blues for agreement matrices)
+        "editorial_cool": LinearSegmentedColormap.from_list(
+            "editorial_cool",
+            [PAPER, "#2a2a2c", "#6e6a64", "#a8a59d", FG_COLOR], N=256,
+        ),
+    }
 
 
 def setup():
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({
         "figure.facecolor": BG_COLOR,
-        "axes.facecolor": "#141414",
-        "text.color": FG_COLOR,
-        "axes.labelcolor": FG_COLOR,
-        "xtick.color": FG_COLOR,
-        "ytick.color": FG_COLOR,
-        "axes.edgecolor": GRID_COLOR,
-        "grid.color": GRID_COLOR,
-        "grid.alpha": 0.3,
-        "font.size": 11,
-        "axes.titlesize": 14,
-        "axes.labelsize": 12,
-        "legend.facecolor": "#1a1a1a",
-        "legend.edgecolor": GRID_COLOR,
+        "axes.facecolor":   PAPER,
+        "text.color":       FG_COLOR,
+        "axes.labelcolor":  "#eae6de8c",
+        "xtick.color":      "#eae6de70",
+        "ytick.color":      "#eae6de70",
+        "axes.edgecolor":   GRID_COLOR,
+        "grid.color":       "#eae6de1e",
+        "grid.alpha":       1.0,
+        "grid.linewidth":   0.6,
+        "axes.spines.top":    False,
+        "axes.spines.right":  False,
+        "axes.spines.left":   False,
+        "font.family":      ["JetBrains Mono", "DejaVu Sans Mono", "monospace"],
+        "font.size":        10,
+        "axes.titlesize":   13,
+        "axes.titleweight": "normal",
+        "axes.titlecolor":  FG_COLOR,
+        "axes.labelsize":   10,
+        "legend.facecolor": PAPER,
+        "legend.edgecolor": "#eae6de1e",
         "legend.labelcolor": FG_COLOR,
+        "legend.fontsize":  9,
+        "legend.frameon":   True,
         "savefig.facecolor": BG_COLOR,
+        "savefig.edgecolor": "none",
     })
+    # Register custom cmaps so cmap="editorial_*" works
+    import matplotlib as mpl
+    for name, cmap in _build_cmaps().items():
+        try:
+            mpl.colormaps.register(cmap, name=name, force=True)
+        except (AttributeError, TypeError):
+            mpl.cm.register_cmap(name=name, cmap=cmap)
 
 
 def load_results():
@@ -153,9 +194,9 @@ def chart_cumulative_returns(results):
 
     # Annotations
     ax.annotate("2008 Crisis", xy=(pd.Timestamp("2008-09-15"), 1.0),
-                fontsize=9, color="gray", ha="center")
+                fontsize=9, color="#eae6de80", ha="center")
     ax.annotate("COVID", xy=(pd.Timestamp("2020-03-15"), 2.0),
-                fontsize=9, color="gray", ha="center")
+                fontsize=9, color="#eae6de80", ha="center")
 
     ax.set_ylabel("Growth of $1")
     ax.set_title("Cumulative Return Comparison (Out-of-Sample)")
@@ -221,7 +262,7 @@ def chart_monthly_heatmap(results):
                             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="RdYlGn",
+    sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="editorial_diverging",
                 center=0, ax=ax, linewidths=0.5,
                 cbar_kws={"label": "Monthly Return (%)"})
     ax.set_title("Regime Momentum: Monthly Returns (%)")
@@ -252,8 +293,8 @@ def chart_rolling_sharpe(results):
         ls = "-" if name != "buy_and_hold" else "--"
         ax.plot(rs.index, rs, label=label, color=color, linewidth=lw, linestyle=ls)
 
-    ax.axhline(y=0, color="black", linewidth=0.5, linestyle="-")
-    ax.axhline(y=1, color="gray", linewidth=0.5, linestyle=":")
+    ax.axhline(y=0, color="#eae6de33", linewidth=0.6, linestyle="-")
+    ax.axhline(y=1, color="#eae6de1e", linewidth=0.5, linestyle=":")
     ax.set_ylabel("Rolling 1Y Sharpe")
     ax.set_title("Rolling 1-Year Sharpe Ratio")
     ax.legend()
@@ -287,7 +328,7 @@ def chart_cost_sensitivity(results):
         ax.axhline(y=bah_sharpe, color=STRATEGY_COLORS["buy_and_hold"],
                    linestyle="--", linewidth=1, label=f"Buy & Hold ({bah_sharpe:.2f})")
 
-    ax.axhline(y=0, color="black", linewidth=0.5)
+    ax.axhline(y=0, color="#eae6de33", linewidth=0.6)
     ax.set_xlabel("Transaction Cost (bps, one-way)")
     ax.set_ylabel("Sharpe Ratio")
     ax.set_title("Cost Sensitivity Analysis")
@@ -310,7 +351,7 @@ def chart_regime_timeline(results):
                                     sharex=True)
 
     # Top: Equity curve with regime shading
-    ax1.plot(bt_bah.index, bt_bah["cumulative_return"], color="black", linewidth=0.8)
+    ax1.plot(bt_bah.index, bt_bah["cumulative_return"], color=FG_COLOR, linewidth=0.9, alpha=0.85)
     _add_regime_shading(ax1, pred)
     ax1.set_ylabel("Growth of $1")
     ax1.set_title("Market Performance with Regime Classification")
@@ -351,7 +392,7 @@ def chart_transition_matrix(results):
     trans = np.divide(counts, row_sums, where=row_sums > 0, out=np.zeros_like(counts))
 
     fig, ax = plt.subplots(figsize=(7, 6))
-    sns.heatmap(trans, annot=True, fmt=".2f", cmap="YlOrRd",
+    sns.heatmap(trans, annot=True, fmt=".2f", cmap="editorial_warm",
                 xticklabels=["Calm", "Moderate", "Turbulent"],
                 yticklabels=["Calm", "Moderate", "Turbulent"],
                 vmin=0, vmax=1, ax=ax, linewidths=1,
@@ -493,9 +534,9 @@ def chart_signal_vs_drawdown(results):
     # Market drawdown (right axis, inverted)
     ax2 = ax1.twinx()
     dd = bt_bah["drawdown"].loc[common] * 100
-    ax2.fill_between(common, dd, 0, color="red", alpha=0.2)
-    ax2.plot(common, dd, color="red", linewidth=0.8, alpha=0.6, label="Market Drawdown")
-    ax2.set_ylabel("Market Drawdown (%)", color="red")
+    ax2.fill_between(common, dd, 0, color=DOWN_COLOR, alpha=0.22)
+    ax2.plot(common, dd, color=DOWN_COLOR, linewidth=0.9, alpha=0.75, label="Market Drawdown")
+    ax2.set_ylabel("Market Drawdown (%)", color=DOWN_COLOR)
     ax2.invert_yaxis()
 
     ax1.set_title("Signal vs Market Drawdown: Does the strategy go defensive before crashes?")
@@ -532,7 +573,7 @@ def chart_model_agreement(results):
             agreement[i, j] = (pred[models[i]] == pred[models[j]]).mean() * 100
 
     fig, ax = plt.subplots(figsize=(7, 6))
-    sns.heatmap(agreement, annot=True, fmt=".1f", cmap="Blues",
+    sns.heatmap(agreement, annot=True, fmt=".1f", cmap="editorial_cool",
                 xticklabels=model_names, yticklabels=model_names,
                 vmin=0, vmax=100, ax=ax, linewidths=1,
                 cbar_kws={"label": "Agreement (%)"})
@@ -582,15 +623,15 @@ def chart_performance_table(results):
 
     # Color header
     for j in range(len(formatted.columns)):
-        tbl[0, j].set_facecolor("#4fc3f7")
-        tbl[0, j].set_text_props(color="white", weight="bold")
+        tbl[0, j].set_facecolor("#1e1d1b")
+        tbl[0, j].set_text_props(color=ACCENT, weight="normal")
 
     # Highlight best Sharpe row
     best_idx = display["Sharpe"].idxmax() if "Sharpe" in display.columns else None
     if best_idx is not None:
         row_idx = list(formatted.index).index(best_idx) + 1
         for j in range(len(formatted.columns)):
-            tbl[row_idx, j].set_facecolor("#e3f2fd")
+            tbl[row_idx, j].set_facecolor("#252320")
 
     ax.set_title("Strategy Performance Comparison", fontsize=14, pad=20)
 
@@ -613,8 +654,11 @@ def _add_regime_shading(ax, predictions):
     for i in range(1, len(labels)):
         if labels[i] != prev_label or i == len(labels) - 1:
             end_date = dates.iloc[i]
-            color = REGIME_COLORS.get(int(prev_label), "gray")
-            ax.axvspan(start_date, end_date, alpha=0.08, color=color)
+            label_int = int(prev_label)
+            color = REGIME_COLORS.get(label_int, FG_COLOR)
+            # Lighter wash for calm/moderate, slightly darker for turbulent
+            alpha = 0.05 if label_int < 2 else 0.10
+            ax.axvspan(start_date, end_date, alpha=alpha, color=color, linewidth=0)
             start_date = end_date
             prev_label = labels[i]
 
@@ -634,10 +678,13 @@ def chart_prediction_accuracy(results):
 
     x = np.arange(3)
     width = 0.25
+    horizon_alpha = [0.55, 0.78, 1.0]
     for i, h in enumerate(horizons):
         hdf = pred_acc[pred_acc["horizon_days"] == h].sort_values("regime_id")
-        bars = ax.bar(x + i * width, hdf["mean_realized_vol"].values * 100,
-                      width, label=f"{h}d horizon", alpha=0.8)
+        colors_by_regime = [REGIME_COLORS[r] for r in hdf["regime_id"].values]
+        ax.bar(x + i * width, hdf["mean_realized_vol"].values * 100,
+               width, label=f"{h}d horizon", color=colors_by_regime,
+               alpha=horizon_alpha[i % 3])
 
     ax.set_xticks(x + width)
     ax.set_xticklabels(["Calm", "Moderate", "Turbulent"])
@@ -694,7 +741,7 @@ def chart_cumulative_excess(results):
     ax.fill_between(cum_excess.index, cum_excess * 100, 0,
                     where=cum_excess >= 0, color=ACCENT, alpha=0.15)
     ax.fill_between(cum_excess.index, cum_excess * 100, 0,
-                    where=cum_excess < 0, color="#e74c3c", alpha=0.15)
+                    where=cum_excess < 0, color=DOWN_COLOR, alpha=0.18)
     ax.axhline(y=0, color=FG_COLOR, linewidth=0.5)
     ax.set_ylabel("Cumulative Excess Return (%)")
     ax.set_title("Regime Momentum vs Buy-and-Hold: Cumulative Excess Return")
@@ -733,7 +780,7 @@ def chart_oos_comparison(results):
     width = 0.35
 
     ax.bar(x - width/2, is_sharpes, width, label="In-Sample (2006-2020)", color=ACCENT, alpha=0.8)
-    ax.bar(x + width/2, oos_sharpes, width, label="Out-of-Sample (2021-2026)", color="#e74c3c", alpha=0.8)
+    ax.bar(x + width/2, oos_sharpes, width, label="Out-of-Sample (2021-2026)", color=DOWN_COLOR, alpha=0.85)
 
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=15)
@@ -772,8 +819,10 @@ def chart_crude_oil_regimes(results):
     start = dates.iloc[0]
     for i in range(1, len(labels)):
         if labels[i] != prev or i == len(labels) - 1:
-            color = REGIME_COLORS.get(int(prev), "gray")
-            ax1.axvspan(start, dates.iloc[i], alpha=0.15, color=color)
+            label_int = int(prev)
+            color = REGIME_COLORS.get(label_int, FG_COLOR)
+            alpha = 0.06 if label_int < 2 else 0.13
+            ax1.axvspan(start, dates.iloc[i], alpha=alpha, color=color, linewidth=0)
             start = dates.iloc[i]
             prev = labels[i]
     ax1.set_ylabel("WTI Crude Oil ($)")

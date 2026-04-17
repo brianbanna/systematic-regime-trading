@@ -29,6 +29,32 @@
     <div class="masthead-grid" aria-hidden="true"></div>
     <div class="masthead-glow" aria-hidden="true"></div>
 
+    <div class="ticker" aria-hidden="true">
+        <div class="ticker-track">
+            <span class="ticker-item"><b>SPY</b> <span class="t-down">−55.2% MAX DD</span></span>
+            <span class="ticker-item"><b>REGIME</b> <span class="t-up">−27.7% MAX DD</span></span>
+            <span class="ticker-item"><b>SHARPE</b> <span class="t-gold">0.70 vs 0.46</span></span>
+            <span class="ticker-item"><b>CAGR</b> <span class="t-up">+10.2%</span></span>
+            <span class="ticker-item"><b>LEAD</b> <span class="t-gold">6 DAYS</span></span>
+            <span class="ticker-item"><b>2008 CRISIS</b> <span class="t-up">+$2,160</span></span>
+            <span class="ticker-item"><b>OOS WINDOWS</b> <span class="t-gold">59</span></span>
+            <span class="ticker-item"><b>PREDICTIONS</b> <span class="t-gold">3,771</span></span>
+            <span class="ticker-item"><b>MODELS</b> <span class="t-gold">5</span></span>
+            <span class="ticker-item"><b>EXEC LAG</b> <span>T+1</span></span>
+            <!-- duplicate for seamless loop -->
+            <span class="ticker-item"><b>SPY</b> <span class="t-down">−55.2% MAX DD</span></span>
+            <span class="ticker-item"><b>REGIME</b> <span class="t-up">−27.7% MAX DD</span></span>
+            <span class="ticker-item"><b>SHARPE</b> <span class="t-gold">0.70 vs 0.46</span></span>
+            <span class="ticker-item"><b>CAGR</b> <span class="t-up">+10.2%</span></span>
+            <span class="ticker-item"><b>LEAD</b> <span class="t-gold">6 DAYS</span></span>
+            <span class="ticker-item"><b>2008 CRISIS</b> <span class="t-up">+$2,160</span></span>
+            <span class="ticker-item"><b>OOS WINDOWS</b> <span class="t-gold">59</span></span>
+            <span class="ticker-item"><b>PREDICTIONS</b> <span class="t-gold">3,771</span></span>
+            <span class="ticker-item"><b>MODELS</b> <span class="t-gold">5</span></span>
+            <span class="ticker-item"><b>EXEC LAG</b> <span>T+1</span></span>
+        </div>
+    </div>
+
     <div class="editorial">
         <div class="byline">
             <a href="https://brianbanna.com">Brian Banna</a>
@@ -45,32 +71,65 @@
             </h1>
         </div>
 
-        <div class="tagline-row">
-            <p class="tagline">
-                A five-model ensemble that classifies market regimes and adjusts equity allocation in real time. Built on fifteen years of out-of-sample data, walk-forward, no peeking.
-            </p>
-            <a href="#hook" class="scroll-hint">
-                <span>Begin</span>
-                <span class="arrow" aria-hidden="true">↓</span>
-            </a>
+        <div class="hero-lower">
+            <div>
+                <p class="tagline">
+                    A five-model ensemble that classifies market regimes and adjusts equity allocation in real time. Built on <em>fifteen years</em> of out-of-sample data, walk-forward, no peeking.
+                </p>
+                <a href="#hook" class="scroll-hint">
+                    <span>Begin reading</span>
+                    <span class="arrow" aria-hidden="true">↓</span>
+                </a>
+            </div>
+
+            <aside class="hero-preview" aria-label="Key performance summary">
+                <div class="hero-preview-head">
+                    <span><span class="live-dot"></span>OUT-OF-SAMPLE · 2008–2024</span>
+                    <span>SPY BENCH</span>
+                </div>
+                <div class="hero-preview-row">
+                    <span class="hp-label">Sharpe Ratio</span>
+                    <span class="hp-value hp-gold">0.70<span class="hp-delta up">+52%</span></span>
+                </div>
+                <div class="hero-preview-row">
+                    <span class="hp-label">CAGR</span>
+                    <span class="hp-value hp-pos">10.2%<span class="hp-delta up">+60 bps</span></span>
+                </div>
+                <div class="hero-preview-row">
+                    <span class="hp-label">Max Drawdown</span>
+                    <span class="hp-value hp-pos">−27.7%<span class="hp-delta up">−50%</span></span>
+                </div>
+                <div class="hero-preview-row">
+                    <span class="hp-label">Volatility</span>
+                    <span class="hp-value hp-pos">9.3%<span class="hp-delta up">−54%</span></span>
+                </div>
+                <div class="hero-preview-row">
+                    <span class="hp-label">Fama-French R²</span>
+                    <span class="hp-value">0.20</span>
+                </div>
+            </aside>
         </div>
 
         <div class="badges">
             <div class="badge">
-                <div class="value">0.70</div>
-                <div class="label">Sharpe</div>
+                <div class="value"><span class="gold-val">0.70</span></div>
+                <div class="label">Sharpe<span class="delta neutral">vs 0.46</span></div>
+                <div class="spark" aria-hidden="true"><span style="height:40%"></span><span style="height:55%"></span><span style="height:70%"></span><span style="height:82%"></span><span style="height:60%"></span><span style="height:75%"></span><span style="height:90%"></span><span style="height:55%"></span></div>
             </div>
             <div class="badge">
-                <div class="value">−28<span style="opacity:0.6">%</span></div>
-                <div class="label">Max Drawdown</div>
+                <div class="value"><span class="negative-val">−28</span><span style="opacity:0.5">%</span></div>
+                <div class="label">Max Drawdown<span class="delta up">−50%</span></div>
+                <div class="spark" aria-hidden="true"><span style="height:30%"></span><span style="height:45%"></span><span style="height:95%"></span><span style="height:80%"></span><span style="height:65%"></span><span style="height:50%"></span><span style="height:40%"></span><span style="height:30%"></span></div>
             </div>
             <div class="badge">
-                <div class="value">10.2<span style="opacity:0.6">%</span></div>
-                <div class="label">CAGR</div>
+                <div class="value"><span class="positive">10.2</span><span style="opacity:0.5">%</span></div>
+                <div class="label">CAGR<span class="delta up">+60bp</span></div>
+                <div class="spark" aria-hidden="true"><span style="height:45%"></span><span style="height:55%"></span><span style="height:65%"></span><span style="height:50%"></span><span style="height:72%"></span><span style="height:85%"></span><span style="height:78%"></span><span style="height:90%"></span></div>
             </div>
             <div class="badge">
-                <div class="value">6<span style="opacity:0.6 font-family:var(--font-serif)"> d</span></div>
-                <div class="label">Lead Time</div>
+                <div class="value"><span class="blue-val">6</span><span style="opacity:0.5"> d</span></div>
+                <div class="label">Lead Time<span class="delta neutral">median</span></div>
+                <div class="spark" aria-hidden="true"><span style="height:55%"></span><span style="height:70%"></span><span style="height:45%"></span><span style="height:82%"></span><span style="height:60%"></span><span style="height:50%"></span><span style="height:68%"></span><span style="height:48%"></span></div>
             </div>
         </div>
     </div>
@@ -81,29 +140,41 @@
      ════════════════════════════════════════════════════════ -->
 <main class="editorial">
 
-<section id="hook" class="reveal">
+<section id="hook" class="reveal" data-theme="copper">
     <div class="section-marker">§ 01 · Hook</div>
-    <h2>September 2008. <em>The S&P 500 lost 30% in three weeks.</em></h2>
-    <p class="lead">
-        Most systematic strategies were fully invested when the crash hit. This system detected the regime shift six days earlier. By September 19, allocation had dropped from 85% to 12%.
-    </p>
+    <div class="section-grid">
+        <div>
+            <h2>September 2008. <em>The S&P 500 lost 30% in three weeks.</em></h2>
+            <p class="lead">
+                Most systematic strategies were fully invested when the crash hit. This system detected the regime shift <em>six days earlier</em>. By September 19, allocation had dropped from 85% to 12%.
+            </p>
+        </div>
+        <div class="side-note">
+            <strong>Why this matters</strong>
+            A 50% drawdown requires a 100% gain to recover. Most quant strategies fail because they confuse calm volatility with structural stability. Regime detection decouples the two.
+        </div>
+    </div>
 
     <div class="stat-row">
         <div class="stat-card">
-            <div class="big negative-val">−29%</div>
+            <div class="big negative-val"><span class="arrow">▼</span>−29%</div>
             <div class="desc">Market · Sep–Dec 2008</div>
+            <div class="bar" style="--bar-w: 78%"></div>
         </div>
         <div class="stat-card">
-            <div class="big">−4.3%</div>
+            <div class="big positive"><span class="arrow">▼</span>−4.3%</div>
             <div class="desc">Strategy · Sep–Dec 2008</div>
+            <div class="bar" style="--bar-w: 12%"></div>
         </div>
         <div class="stat-card">
-            <div class="big negative-val">−55%</div>
+            <div class="big negative-val"><span class="arrow">▼</span>−55%</div>
             <div class="desc">Buy &amp; Hold Max DD</div>
+            <div class="bar" style="--bar-w: 100%"></div>
         </div>
         <div class="stat-card">
-            <div class="big">−28%</div>
+            <div class="big positive"><span class="arrow">▼</span>−28%</div>
             <div class="desc">Strategy Max DD</div>
+            <div class="bar" style="--bar-w: 51%"></div>
         </div>
     </div>
 </section>
@@ -111,9 +182,15 @@
 <!-- ════════════════════════════════════════════════════════
      § 02 · Performance
      ════════════════════════════════════════════════════════ -->
-<section id="performance" class="reveal">
+<section id="performance" class="reveal" data-theme="gold">
     <div class="section-marker">§ 02 · Performance</div>
-    <h2>Equity curves, <em>after costs.</em></h2>
+    <div class="section-grid">
+        <h2>Equity curves, <em>after costs.</em></h2>
+        <div class="side-note">
+            <strong>Benchmarks</strong>
+            Five strategies tested against SPY buy-and-hold over 15 years of out-of-sample data. All results include 7 bps transaction costs and one-day execution lag.
+        </div>
+    </div>
 
     <div id="plotly-equity-curve" class="interactive-chart"></div>
     <p class="chart-caption-inline">Hover for daily values. Click the legend to toggle strategies. Drag to zoom.</p>
@@ -127,11 +204,11 @@
     <table>
         <thead><tr><th>Strategy</th><th>CAGR</th><th>Vol</th><th>Sharpe</th><th>Max DD</th><th>Turnover</th></tr></thead>
         <tbody>
-            <tr class="highlight"><td>Regime Momentum</td><td class="positive">10.2%</td><td>9.3%</td><td class="positive">0.70</td><td>−27.7%</td><td>5.7×</td></tr>
-            <tr><td>Binary Regime</td><td>7.5%</td><td>12.5%</td><td>0.49</td><td>−35.8%</td><td>10.6×</td></tr>
-            <tr><td>Vol-Managed</td><td>6.6%</td><td>10.5%</td><td>0.47</td><td>−23.7%</td><td>1.7×</td></tr>
-            <tr><td>SMA 200</td><td>7.0%</td><td>11.7%</td><td>0.47</td><td>−21.9%</td><td>6.0×</td></tr>
-            <tr><td>Buy &amp; Hold (SPY)</td><td>9.6%</td><td>20.1%</td><td>0.46</td><td class="negative">−55.2%</td><td>0.0×</td></tr>
+            <tr class="highlight"><td>Regime Momentum</td><td class="positive">10.2%</td><td class="positive">9.3%</td><td class="gold-val">0.70</td><td class="positive">−27.7%</td><td>5.7×</td></tr>
+            <tr><td>Binary Regime</td><td>7.5%</td><td>12.5%</td><td>0.49</td><td class="negative">−35.8%</td><td>10.6×</td></tr>
+            <tr><td>Vol-Managed</td><td>6.6%</td><td class="positive">10.5%</td><td>0.47</td><td class="positive">−23.7%</td><td>1.7×</td></tr>
+            <tr><td>SMA 200</td><td>7.0%</td><td>11.7%</td><td>0.47</td><td class="positive">−21.9%</td><td>6.0×</td></tr>
+            <tr><td>Buy &amp; Hold (SPY)</td><td>9.6%</td><td class="negative">20.1%</td><td>0.46</td><td class="negative">−55.2%</td><td>0.0×</td></tr>
         </tbody>
     </table>
     </div>
@@ -140,20 +217,27 @@
 <!-- ════════════════════════════════════════════════════════
      § 03 · Signal vs drawdown
      ════════════════════════════════════════════════════════ -->
-<section id="signal" class="reveal">
+<section id="signal" class="reveal" data-theme="jade">
     <div class="section-marker">§ 03 · Signal</div>
-    <h2>Allocation <em>leads</em> drawdown.</h2>
-
-    <div class="chart-container">
-        <img src="assets/figures/11_signal_vs_drawdown.png" alt="Signal vs drawdown" loading="lazy">
-        <div class="chart-caption">Bone: equity allocation. Terracotta: market drawdown. The strategy reduces exposure before and during every major drawdown of the sample.</div>
+    <div class="section-grid reverse">
+        <div class="side-note">
+            <strong>Lead time</strong>
+            Median regime-shift detection occurs 6 trading days before peak drawdown. The asymmetric filter requires 3 consecutive turbulent signals to reduce exposure, but only 1 calm signal to re-enter.
+        </div>
+        <div>
+            <h2>Allocation <em>leads</em> drawdown.</h2>
+            <div class="chart-container">
+                <img src="assets/figures/11_signal_vs_drawdown.png" alt="Signal vs drawdown" loading="lazy">
+                <div class="chart-caption"><b>Bone:</b> equity allocation. <b>Terracotta:</b> market drawdown. The strategy reduces exposure <b>before and during</b> every major drawdown of the sample.</div>
+            </div>
+        </div>
     </div>
 </section>
 
 <!-- ════════════════════════════════════════════════════════
      § 04 · Architecture
      ════════════════════════════════════════════════════════ -->
-<section id="architecture" class="reveal">
+<section id="architecture" class="reveal" data-theme="steel">
     <div class="section-marker">§ 04 · Architecture</div>
     <h2>Five models, <em>one ensemble.</em></h2>
 
@@ -172,11 +256,11 @@
     </div>
 
     <ul>
-        <li><strong>HMM</strong> · 5-state Gaussian, remapped to 3, transition persistence</li>
-        <li><strong>GARCH(1,1) Student-t</strong> · conditional volatility clustering</li>
-        <li><strong>K-Means</strong> · feature-space clustering</li>
-        <li><strong>Gaussian Mixture Model</strong> · Bayesian posterior probabilities</li>
-        <li><strong>Markov-Switching</strong> · Hamilton 1989, regime-dependent variance</li>
+        <li><strong>HMM</strong> · 5-state Gaussian, remapped to 3, transition persistence <span class="chip jade">Feature-space</span></li>
+        <li><strong>GARCH(1,1) Student-t</strong> · conditional volatility clustering <span class="chip copper">Return-based</span></li>
+        <li><strong>K-Means</strong> · feature-space clustering <span class="chip jade">Feature-space</span></li>
+        <li><strong>Gaussian Mixture Model</strong> · Bayesian posterior probabilities <span class="chip jade">Feature-space</span></li>
+        <li><strong>Markov-Switching</strong> · Hamilton 1989, regime-dependent variance <span class="chip copper">Return-based</span></li>
     </ul>
 
     <p>
@@ -204,7 +288,7 @@
 <!-- ════════════════════════════════════════════════════════
      § 05 · Prediction
      ════════════════════════════════════════════════════════ -->
-<section id="prediction" class="reveal">
+<section id="prediction" class="reveal" data-theme="violet">
     <div class="section-marker">§ 05 · Prediction</div>
     <h2>Regime forecast <em>is real.</em></h2>
 
@@ -222,9 +306,32 @@
 <!-- ════════════════════════════════════════════════════════
      § 06 · Conditional performance
      ════════════════════════════════════════════════════════ -->
-<section id="conditional" class="reveal">
+<section id="conditional" class="reveal" data-theme="jade">
     <div class="section-marker">§ 06 · Conditional Performance</div>
     <h2>Most of the alpha <em>comes from calm days.</em></h2>
+
+    <div class="stat-row">
+        <div class="stat-card">
+            <div class="big positive">1.10</div>
+            <div class="desc">Calm Sharpe</div>
+            <div class="bar" style="--bar-w: 88%"></div>
+        </div>
+        <div class="stat-card">
+            <div class="big gold-val">52%</div>
+            <div class="desc">Trading Days Calm</div>
+            <div class="bar" style="--bar-w: 52%"></div>
+        </div>
+        <div class="stat-card">
+            <div class="big positive">81%</div>
+            <div class="desc">Return From Calm</div>
+            <div class="bar" style="--bar-w: 81%"></div>
+        </div>
+        <div class="stat-card">
+            <div class="big negative-val">0.18</div>
+            <div class="desc">Turbulent Sharpe</div>
+            <div class="bar" style="--bar-w: 14%"></div>
+        </div>
+    </div>
 
     <div class="chart-container">
         <img src="assets/figures/09_regime_performance.png" alt="Regime performance" loading="lazy">
@@ -235,7 +342,7 @@
 <!-- ════════════════════════════════════════════════════════
      § 07 · Cost simulator
      ════════════════════════════════════════════════════════ -->
-<section id="costs" class="reveal">
+<section id="costs" class="reveal" data-theme="amber">
     <div class="section-marker">§ 07 · Cost Sensitivity</div>
     <h2>How much friction <em>can it take?</em></h2>
     <p class="lead">Drag the slider to see how transaction costs affect performance. Institutional equity costs are typically 5 to 10 bps.</p>
@@ -249,20 +356,24 @@
 
         <div class="stat-row" id="sim-results">
             <div class="stat-card">
-                <div class="big" id="sim-sharpe">0.70</div>
+                <div class="big gold-val" id="sim-sharpe">0.70</div>
                 <div class="desc">Sharpe</div>
+                <div class="bar" style="--bar-w: 70%"></div>
             </div>
             <div class="stat-card">
-                <div class="big" id="sim-cagr">10.2%</div>
+                <div class="big positive" id="sim-cagr">10.2%</div>
                 <div class="desc">CAGR</div>
+                <div class="bar" style="--bar-w: 85%"></div>
             </div>
             <div class="stat-card">
-                <div class="big" id="sim-maxdd">−28%</div>
+                <div class="big positive" id="sim-maxdd">−28%</div>
                 <div class="desc">Max DD</div>
+                <div class="bar" style="--bar-w: 51%"></div>
             </div>
             <div class="stat-card">
-                <div class="big" id="sim-breakeven">31 bps</div>
+                <div class="big gold-val" id="sim-breakeven">31 bps</div>
                 <div class="desc">Breakeven</div>
+                <div class="bar" style="--bar-w: 62%"></div>
             </div>
         </div>
         <p class="chart-caption-inline" id="sim-verdict"></p>
@@ -272,7 +383,7 @@
 <!-- ════════════════════════════════════════════════════════
      § 08 · Stress test
      ════════════════════════════════════════════════════════ -->
-<section id="stress" class="reveal">
+<section id="stress" class="reveal" data-theme="copper">
     <div class="section-marker">§ 08 · Stress Test</div>
     <h2>Through the <em>2008 crisis.</em></h2>
     <p class="lead">$10,000 invested in September 2007, right before the worst financial crisis in modern history.</p>
@@ -285,12 +396,24 @@
         </div>
         <div class="stat-row" id="growth-final">
             <div class="stat-card">
-                <div class="big" id="growth-strat">$10,000</div>
-                <div class="desc">Strategy</div>
+                <div class="big positive" id="growth-strat">$10,000</div>
+                <div class="desc">Regime Strategy</div>
+                <div class="bar" style="--bar-w: 100%"></div>
             </div>
             <div class="stat-card">
                 <div class="big negative-val" id="growth-spy">$10,000</div>
                 <div class="desc">SPY Buy &amp; Hold</div>
+                <div class="bar" style="--bar-w: 68%"></div>
+            </div>
+            <div class="stat-card">
+                <div class="big gold-val">+46%</div>
+                <div class="desc">Alpha by 2010</div>
+                <div class="bar" style="--bar-w: 72%"></div>
+            </div>
+            <div class="stat-card">
+                <div class="big positive">2008-09</div>
+                <div class="desc">Worst 12 months</div>
+                <div class="bar" style="--bar-w: 55%"></div>
             </div>
         </div>
     </div>
@@ -299,9 +422,38 @@
 <!-- ════════════════════════════════════════════════════════
      § 09 · Cross-asset
      ════════════════════════════════════════════════════════ -->
-<section id="crude" class="reveal">
+<section id="crude" class="reveal" data-theme="violet">
     <div class="section-marker">§ 09 · Cross-Asset</div>
-    <h2>Same machinery, <em>different market.</em></h2>
+    <div class="section-grid">
+        <h2>Same machinery, <em>different market.</em></h2>
+        <div class="side-note">
+            <strong>Cross-asset transfer</strong>
+            The ensemble was refit on WTI crude oil with no architectural change. Identifies three independent regime events across sixteen years. Correlation with equity VIX: 0.25 — low enough to prove the detector is price-agnostic.
+        </div>
+    </div>
+
+    <div class="stat-row">
+        <div class="stat-card">
+            <div class="big negative-val">2008</div>
+            <div class="desc">Crash detected</div>
+            <div class="bar" style="--bar-w: 95%"></div>
+        </div>
+        <div class="stat-card">
+            <div class="big gold-val">2014–16</div>
+            <div class="desc">Oil glut flagged</div>
+            <div class="bar" style="--bar-w: 72%"></div>
+        </div>
+        <div class="stat-card">
+            <div class="big negative-val">2020</div>
+            <div class="desc">Negative price event</div>
+            <div class="bar" style="--bar-w: 100%"></div>
+        </div>
+        <div class="stat-card">
+            <div class="big blue-val">0.25</div>
+            <div class="desc">VIX correlation</div>
+            <div class="bar" style="--bar-w: 25%"></div>
+        </div>
+    </div>
 
     <div class="chart-container">
         <img src="assets/figures/18_crude_oil_regimes.png" alt="Crude oil regimes" loading="lazy">
@@ -312,7 +464,7 @@
 <!-- ════════════════════════════════════════════════════════
      § 10 · Diagnostics
      ════════════════════════════════════════════════════════ -->
-<section id="diagnostics" class="reveal">
+<section id="diagnostics" class="reveal" data-theme="steel">
     <div class="section-marker">§ 10 · Diagnostics</div>
     <h2>Ensemble agrees, <em>then disagrees, then agrees.</em></h2>
 
@@ -350,17 +502,19 @@
     /* Mark body as JS-enabled so reveal animations activate */
     document.body.classList.add('js');
 
-    /* ─── Editorial palette tokens for charts ─── */
-    var INK   = '#0c0c0e';
-    var PAPER = '#121214';
-    var BG    = '#0a0b0d';
-    var FG    = '#eae6de';
-    var FG_60 = 'rgba(234, 230, 222, 0.6)';
-    var FG_30 = 'rgba(234, 230, 222, 0.12)';
-    var ACCENT = '#d4cec0';
-    var UP    = '#8ca891';   /* sage */
-    var DOWN  = '#b87c6c';   /* terracotta */
-    var FONT  = "JetBrains Mono, ui-monospace, monospace";
+    /* ─── Signal palette tokens for charts ─── */
+    var INK    = '#0c0c0e';
+    var PAPER  = '#141417';
+    var BG     = '#0a0b0d';
+    var FG     = '#eae6de';
+    var FG_60  = 'rgba(234, 230, 222, 0.6)';
+    var FG_30  = 'rgba(234, 230, 222, 0.14)';
+    var ACCENT = '#c8a255';                 /* gold */
+    var UP     = '#62af7b';                 /* jade */
+    var DOWN   = '#cf664d';                 /* copper */
+    var BLUE   = '#6894be';                 /* steel */
+    var VIOLET = '#9b82c8';                 /* violet */
+    var FONT   = "JetBrains Mono, ui-monospace, monospace";
 
     /* ─── Reveal sections on scroll ─── */
     var obs = new IntersectionObserver(function(entries) {
@@ -433,13 +587,13 @@
     var D   = CHART_DATA;
     var mob = window.innerWidth < 640;
 
-    /* Color overrides for each strategy line, mapped to editorial palette */
+    /* Color overrides: gold hero line, signal-coloured supporting strategies */
     var strategyColor = {
         "Regime Momentum":  ACCENT,
-        "Buy & Hold":       'rgba(234, 230, 222, 0.55)',
-        "Vol-Managed":      'rgba(234, 230, 222, 0.40)',
-        "SMA 200":          'rgba(234, 230, 222, 0.30)',
-        "Binary Regime":    'rgba(234, 230, 222, 0.25)'
+        "Buy & Hold":       DOWN,
+        "Vol-Managed":      BLUE,
+        "SMA 200":          VIOLET,
+        "Binary Regime":    'rgba(234, 230, 222, 0.42)'
     };
 
     var eqTraces = [];
@@ -557,7 +711,7 @@
                 y: oBG.slice(0, len),
                 type: 'scatter', mode: 'lines',
                 name: 'SPY Buy & Hold',
-                line: { color: 'rgba(234, 230, 222, 0.45)', width: 1.4, dash: 'dot' }
+                line: { color: DOWN, width: 1.6, dash: 'dot' }
             }
         ];
     }
